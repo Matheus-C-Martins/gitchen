@@ -9,6 +9,8 @@ export interface Recipe {
   title: string
   ingredients: string[]
   steps: string
+  photo_path: string | null
+  tag_names: string[]
   created_at: string
   profiles: Author | null
 }
@@ -17,4 +19,5 @@ export interface RecipeInput {
   title: string
   ingredients: string[]
   steps: string
+  photo_path: string | null
 }

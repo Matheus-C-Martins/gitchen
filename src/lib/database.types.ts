@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      admins: {
+        Row: {
+          user_id: string
+        }
+        Insert: {
+          user_id: string
+        }
+        Update: {
+          user_id?: string
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          created_at: string
+          recipe_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          recipe_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          recipe_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -35,12 +80,45 @@ export type Database = {
         }
         Relationships: []
       }
+      recipe_tags: {
+        Row: {
+          recipe_id: string
+          tag_id: string
+        }
+        Insert: {
+          recipe_id: string
+          tag_id: string
+        }
+        Update: {
+          recipe_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_tags_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
           created_at: string
           id: string
           ingredients: string[]
+          photo_path: string | null
+          search_text: string
           steps: string
+          tag_names: string[]
           title: string
           updated_at: string
           user_id: string
@@ -49,7 +127,10 @@ export type Database = {
           created_at?: string
           id?: string
           ingredients?: string[]
+          photo_path?: string | null
+          search_text?: string
           steps?: string
+          tag_names?: string[]
           title: string
           updated_at?: string
           user_id?: string
@@ -58,7 +139,10 @@ export type Database = {
           created_at?: string
           id?: string
           ingredients?: string[]
+          photo_path?: string | null
+          search_text?: string
           steps?: string
+          tag_names?: string[]
           title?: string
           updated_at?: string
           user_id?: string
@@ -73,12 +157,73 @@ export type Database = {
           },
         ]
       }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          recipe_id: string
+          reporter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string
+          recipe_id: string
+          reporter_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          recipe_id?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: never; Returns: boolean }
+      set_recipe_tags: {
+        Args: { p_names: string[]; p_recipe_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
