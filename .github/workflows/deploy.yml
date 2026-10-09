@@ -27,7 +27,6 @@ jobs:
         env:
           VITE_SUPABASE_URL: https://eorykepcebenwqufoqky.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_cR3muxJVVSyhsB3ab0NOSw_UaP6Fkqe
-          VITE_HCAPTCHA_SITEKEY: a4f087fe-9066-4b0e-a856-e41ac54efcd6
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
