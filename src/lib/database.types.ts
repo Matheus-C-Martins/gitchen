@@ -52,6 +52,7 @@ export type Database = {
           created_at: string
           id: string
           ingredients: string[]
+          photo_path: string | null
           steps: string
           title: string
           updated_at: string
@@ -61,6 +62,7 @@ export type Database = {
           created_at?: string
           id?: string
           ingredients?: string[]
+          photo_path?: string | null
           steps?: string
           title: string
           updated_at?: string
@@ -70,6 +72,7 @@ export type Database = {
           created_at?: string
           id?: string
           ingredients?: string[]
+          photo_path?: string | null
           steps?: string
           title?: string
           updated_at?: string

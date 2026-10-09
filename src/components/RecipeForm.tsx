@@ -1,17 +1,21 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Recipe, RecipeInput } from '../types'
+import { removeRecipePhoto } from '../lib/photos'
+import PhotoUpload from './PhotoUpload'
 
 const inputClass =
   'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-800 placeholder:text-stone-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:border-stone-600 dark:bg-stone-700 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:ring-orange-500/40'
 
 interface Props {
+  userId: string
   initial?: Recipe
   submitLabel: string
-  onSubmit: (input: RecipeInput) => Promise<void>
+  onSubmit: (input: RecipeInput) => Promise<boolean>
   onCancel?: () => void
 }
 
 export default function RecipeForm({
+  userId,
   initial,
   submitLabel,
   onSubmit,
@@ -22,30 +26,57 @@ export default function RecipeForm({
     initial?.ingredients.join('\n') ?? '',
   )
   const [steps, setSteps] = useState(initial?.steps ?? '')
+  const [photoPath, setPhotoPath] = useState<string | null>(
+    initial?.photo_path ?? null,
+  )
+  const [photoKey, setPhotoKey] = useState(0)
   const [busy, setBusy] = useState(false)
+  const pendingRef = useRef<string | null>(null)
+
+  useEffect(
+    () => () => {
+      const pending = pendingRef.current
+      if (pending) void removeRecipePhoto(pending).catch(() => undefined)
+    },
+    [],
+  )
+
+  const handlePhoto = (path: string | null) => {
+    setPhotoPath(path)
+    pendingRef.current = path && path !== initial?.photo_path ? path : null
+  }
 
   const handle = async (e: FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
+    const sending = pendingRef.current
+    pendingRef.current = null
     setBusy(true)
-    await onSubmit({
+    const ok = await onSubmit({
       title: title.trim(),
       ingredients: ingredients
         .split('\n')
         .map((i) => i.trim())
         .filter(Boolean),
       steps: steps.trim(),
+      photo_path: photoPath,
     })
     setBusy(false)
+    if (!ok) {
+      pendingRef.current = sending
+      return
+    }
     if (!initial) {
       setTitle('')
       setIngredients('')
       setSteps('')
+      setPhotoPath(null)
+      setPhotoKey((k) => k + 1)
     }
   }
 
   return (
-    <form onSubmit={handle} className="flex flex-col gap-3">
+    <form onSubmit={(e) => void handle(e)} className="flex flex-col gap-3">
       <input
         className={inputClass}
         placeholder="Título da receita"
@@ -67,6 +98,13 @@ export default function RecipeForm({
         maxLength={10000}
         value={steps}
         onChange={(e) => setSteps(e.target.value)}
+      />
+      <PhotoUpload
+        key={photoKey}
+        userId={userId}
+        value={photoPath}
+        onChange={handlePhoto}
+        disabled={busy}
       />
       <div className="flex gap-2">
         <button
