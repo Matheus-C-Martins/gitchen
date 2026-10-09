@@ -10,7 +10,13 @@ interface Props {
   userId: string | undefined
   isAdmin: boolean
   version: number
-  onUpdate: (recipe: Recipe, input: RecipeInput) => Promise<boolean>
+  suggestions: string[]
+  onTagClick: (tag: string) => void
+  onUpdate: (
+    recipe: Recipe,
+    input: RecipeInput,
+    tags: string[],
+  ) => Promise<boolean>
   onRemove: (recipe: Recipe) => Promise<boolean>
 }
 
@@ -22,6 +28,8 @@ export default function RecipePage({
   userId,
   isAdmin,
   version,
+  suggestions,
+  onTagClick,
   onUpdate,
   onRemove,
 }: Props) {
@@ -67,8 +75,12 @@ export default function RecipePage({
     if (await onRemove(recipe)) goHome()
   }
 
-  const handleUpdate = async (current: Recipe, input: RecipeInput) => {
-    const ok = await onUpdate(current, input)
+  const handleUpdate = async (
+    current: Recipe,
+    input: RecipeInput,
+    tags: string[],
+  ) => {
+    const ok = await onUpdate(current, input, tags)
     if (ok) {
       const res = await fetchRecipe(id)
       setRecipe(res.recipe)
@@ -114,8 +126,9 @@ export default function RecipePage({
             <RecipeForm
               userId={userId ?? ''}
               initial={recipe}
+              suggestions={suggestions}
               submitLabel="Guardar"
-              onSubmit={(input) => handleUpdate(recipe, input)}
+              onSubmit={(input, tags) => handleUpdate(recipe, input, tags)}
               onCancel={() => setEditing(false)}
             />
           ) : (
@@ -123,6 +136,7 @@ export default function RecipePage({
               recipe={recipe}
               userId={userId}
               isAdmin={isAdmin}
+              onTagClick={onTagClick}
               onEdit={() => setEditing(true)}
               onDelete={() => void handleDelete()}
             />

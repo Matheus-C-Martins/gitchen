@@ -47,6 +47,36 @@ export type Database = {
         }
         Relationships: []
       }
+      recipe_tags: {
+        Row: {
+          recipe_id: string
+          tag_id: string
+        }
+        Insert: {
+          recipe_id: string
+          tag_id: string
+        }
+        Update: {
+          recipe_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_tags_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
           created_at: string
@@ -55,6 +85,7 @@ export type Database = {
           photo_path: string | null
           search_text: string
           steps: string
+          tag_names: string[]
           title: string
           updated_at: string
           user_id: string
@@ -66,6 +97,7 @@ export type Database = {
           photo_path?: string | null
           search_text?: string
           steps?: string
+          tag_names?: string[]
           title: string
           updated_at?: string
           user_id?: string
@@ -77,6 +109,7 @@ export type Database = {
           photo_path?: string | null
           search_text?: string
           steps?: string
+          tag_names?: string[]
           title?: string
           updated_at?: string
           user_id?: string
@@ -130,12 +163,34 @@ export type Database = {
           },
         ]
       }
+      tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
+      set_recipe_tags: {
+        Args: { p_names: string[]; p_recipe_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
