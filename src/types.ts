@@ -10,6 +10,7 @@ export interface Recipe {
   ingredients: string[]
   steps: string
   photo_path: string | null
+  tag_names: string[]
   created_at: string
   profiles: Author | null
 }

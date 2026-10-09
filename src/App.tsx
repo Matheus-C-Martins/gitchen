@@ -2,8 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { removeRecipePhoto } from './lib/photos'
-import { PAGE_SIZE, fetchRecipesPage } from './lib/recipes'
-import { useHashRoute } from './lib/route'
+import {
+  PAGE_SIZE,
+  fetchRecipesPage,
+  fetchTagCounts,
+  saveRecipeTags,
+  type TagCount,
+} from './lib/recipes'
+import { goHome, useHashRoute } from './lib/route'
+import { sameTags } from './lib/tags'
 import type { Recipe, RecipeInput } from './types'
 import AuthPanel from './components/AuthPanel'
 import RecipeForm from './components/RecipeForm'
@@ -18,6 +25,11 @@ type Theme = 'light' | 'dark'
 
 const inputClass =
   'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-800 placeholder:text-stone-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:border-stone-600 dark:bg-stone-700 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:ring-orange-500/40'
+
+const chipBase = 'rounded-full px-3 py-0.5 text-sm transition'
+const chipOff =
+  'bg-white text-stone-600 hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
+const chipOn = 'bg-orange-600 text-white hover:bg-orange-700'
 
 function getInitialTheme(): Theme {
   const saved = localStorage.getItem(THEME_KEY)
@@ -36,16 +48,21 @@ export default function App() {
   const [page, setPage] = useState(0)
   const [reloadKey, setReloadKey] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [listError, setListError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [tag, setTag] = useState<string | null>(null)
+  const [tagCounts, setTagCounts] = useState<TagCount[]>([])
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
   const requestRef = useRef(0)
 
   const route = useHashRoute()
   const routeId = route.name === 'recipe' ? route.id : null
   const userId = session?.user.id
+  const suggestions = tagCounts.map((t) => t.name)
+  const error = actionError ?? listError
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -79,10 +96,10 @@ export default function App() {
 
   useEffect(() => {
     const request = ++requestRef.current
-    void fetchRecipesPage(page, debouncedQuery).then((res) => {
+    void fetchRecipesPage(page, debouncedQuery, tag).then((res) => {
       if (request !== requestRef.current) return
       if (res.error) {
-        setError(res.error)
+        setListError(res.error)
         setLoading(false)
         return
       }
@@ -91,12 +108,22 @@ export default function App() {
         setPage(lastPage)
         return
       }
-      setError(null)
+      setListError(null)
       setRecipes(res.recipes)
       setTotal(res.total)
       setLoading(false)
     })
-  }, [page, debouncedQuery, reloadKey])
+  }, [page, debouncedQuery, tag, reloadKey])
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchTagCounts().then((counts) => {
+      if (!cancelled) setTagCounts(counts)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [reloadKey])
 
   const refresh = useCallback(() => setReloadKey((k) => k + 1), [])
 
@@ -106,18 +133,43 @@ export default function App() {
   const changeQuery = (value: string) => {
     setQuery(value)
     setPage(0)
+    setActionError(null)
   }
 
   const changePage = (next: number) => {
     setPage(next)
+    setActionError(null)
     window.scrollTo({ top: 0 })
   }
 
-  const createRecipe = async (input: RecipeInput): Promise<boolean> => {
-    const { error } = await supabase.from('recipes').insert(input)
+  const selectTag = (next: string | null) => {
+    setTag(next)
+    setPage(0)
+    setActionError(null)
+    if (routeId) goHome()
+  }
+
+  const createRecipe = async (
+    input: RecipeInput,
+    tags: string[],
+  ): Promise<boolean> => {
+    setActionError(null)
+    const { data, error } = await supabase
+      .from('recipes')
+      .insert(input)
+      .select('id')
+      .single()
     if (error) {
-      setError(error.message)
+      setActionError(error.message)
       return false
+    }
+    if (tags.length > 0) {
+      const tagError = await saveRecipeTags(data.id, tags)
+      if (tagError) {
+        setActionError(
+          `Receita criada, mas não foi possível guardar as etiquetas: ${tagError}`,
+        )
+      }
     }
     setPage(0)
     refresh()
@@ -127,17 +179,27 @@ export default function App() {
   const updateRecipe = async (
     recipe: Recipe,
     input: RecipeInput,
+    tags: string[],
   ): Promise<boolean> => {
+    setActionError(null)
     const { error } = await supabase
       .from('recipes')
       .update(input)
       .eq('id', recipe.id)
     if (error) {
-      setError(error.message)
+      setActionError(error.message)
       return false
     }
     if (recipe.photo_path && recipe.photo_path !== input.photo_path) {
       void removeRecipePhoto(recipe.photo_path).catch(() => undefined)
+    }
+    if (!sameTags(recipe.tag_names, tags)) {
+      const tagError = await saveRecipeTags(recipe.id, tags)
+      if (tagError) {
+        setActionError(
+          `Receita guardada, mas não foi possível atualizar as etiquetas: ${tagError}`,
+        )
+      }
     }
     refresh()
     return true
@@ -145,9 +207,10 @@ export default function App() {
 
   const removeRecipe = async (recipe: Recipe): Promise<boolean> => {
     if (!window.confirm('Apagar esta receita?')) return false
+    setActionError(null)
     const { error } = await supabase.from('recipes').delete().eq('id', recipe.id)
     if (error) {
-      setError(error.message)
+      setActionError(error.message)
       return false
     }
     if (recipe.photo_path) {
@@ -159,6 +222,10 @@ export default function App() {
   }
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const chips: TagCount[] =
+    tag && !tagCounts.some((t) => t.name === tag)
+      ? [{ name: tag, count: 0 }, ...tagCounts]
+      : tagCounts
 
   return (
     <div className="min-h-screen bg-amber-50 font-sans text-stone-800 transition-colors dark:bg-stone-900 dark:text-stone-100">
@@ -205,6 +272,8 @@ export default function App() {
             userId={userId}
             isAdmin={isAdmin}
             version={reloadKey}
+            suggestions={suggestions}
+            onTagClick={selectTag}
             onUpdate={updateRecipe}
             onRemove={removeRecipe}
           />
@@ -215,6 +284,7 @@ export default function App() {
                 <h2 className="mb-3 text-lg font-semibold">Nova receita</h2>
                 <RecipeForm
                   userId={session.user.id}
+                  suggestions={suggestions}
                   submitLabel="Adicionar receita"
                   onSubmit={createRecipe}
                 />
@@ -222,11 +292,34 @@ export default function App() {
             )}
 
             <input
-              className={`${inputClass} mb-2`}
+              className={`${inputClass} mb-3`}
               placeholder="Pesquisar por título ou ingrediente"
               value={query}
               onChange={(e) => changeQuery(e.target.value)}
             />
+
+            {chips.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2" aria-label="Filtrar por etiqueta">
+                <button
+                  type="button"
+                  onClick={() => selectTag(null)}
+                  className={`${chipBase} ${tag === null ? chipOn : chipOff}`}
+                >
+                  Todas
+                </button>
+                {chips.map((t) => (
+                  <button
+                    key={t.name}
+                    type="button"
+                    onClick={() => selectTag(tag === t.name ? null : t.name)}
+                    className={`${chipBase} ${tag === t.name ? chipOn : chipOff}`}
+                  >
+                    #{t.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {!loading && (
               <p className="mb-6 text-sm text-stone-500 dark:text-stone-400">
                 {total === 1 ? '1 receita' : `${total} receitas`}
@@ -255,9 +348,10 @@ export default function App() {
                     <RecipeForm
                       userId={userId ?? ''}
                       initial={r}
+                      suggestions={suggestions}
                       submitLabel="Guardar"
-                      onSubmit={async (input) => {
-                        const ok = await updateRecipe(r, input)
+                      onSubmit={async (input, tags) => {
+                        const ok = await updateRecipe(r, input, tags)
                         if (ok) setEditingId(null)
                         return ok
                       }}
@@ -269,6 +363,7 @@ export default function App() {
                       userId={userId}
                       isAdmin={isAdmin}
                       asLink
+                      onTagClick={selectTag}
                       onEdit={() => setEditingId(r.id)}
                       onDelete={() => void removeRecipe(r)}
                     />

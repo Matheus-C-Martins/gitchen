@@ -8,6 +8,7 @@ interface Props {
   userId: string | undefined
   isAdmin: boolean
   asLink?: boolean
+  onTagClick?: (tag: string) => void
   onEdit: () => void
   onDelete: () => void
 }
@@ -19,6 +20,7 @@ export default function RecipeView({
   userId,
   isAdmin,
   asLink,
+  onTagClick,
   onEdit,
   onDelete,
 }: Props) {
@@ -48,6 +50,20 @@ export default function RecipeView({
         )}
         <span>por {r.profiles?.username ?? 'desconhecido'}</span>
       </p>
+      {r.tag_names.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {r.tag_names.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => onTagClick?.(t)}
+              className="rounded-full bg-orange-100 px-3 py-0.5 text-sm text-orange-800 transition hover:bg-orange-200 dark:bg-orange-950 dark:text-orange-200 dark:hover:bg-orange-900"
+            >
+              #{t}
+            </button>
+          ))}
+        </div>
+      )}
       <RecipePhoto path={r.photo_path} alt={r.title} />
       {r.ingredients.length > 0 && (
         <ul className="list-inside list-disc text-stone-700 dark:text-stone-300">
