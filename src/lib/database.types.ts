@@ -53,6 +53,7 @@ export type Database = {
           id: string
           ingredients: string[]
           photo_path: string | null
+          search_text: string
           steps: string
           title: string
           updated_at: string
@@ -63,6 +64,7 @@ export type Database = {
           id?: string
           ingredients?: string[]
           photo_path?: string | null
+          search_text?: string
           steps?: string
           title: string
           updated_at?: string
@@ -73,6 +75,7 @@ export type Database = {
           id?: string
           ingredients?: string[]
           photo_path?: string | null
+          search_text?: string
           steps?: string
           title?: string
           updated_at?: string
