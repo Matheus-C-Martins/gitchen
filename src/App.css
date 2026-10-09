@@ -1,0 +1,53 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #222;
+  background: #faf7f2;
+}
+body {
+  margin: 0;
+}
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+.subtitle {
+  margin-top: -0.5rem;
+  color: #777;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: #fff;
+  border-radius: 10px;
+  padding: 1rem;
+  margin: 1rem 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+input,
+textarea {
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font: inherit;
+}
+.search {
+  width: 100%;
+  box-sizing: border-box;
+}
+button {
+  align-self: flex-start;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  background: #d9622b;
+  color: #fff;
+  cursor: pointer;
+}
+button.danger {
+  background: #999;
+}
+.steps {
+  white-space: pre-wrap;
+}
