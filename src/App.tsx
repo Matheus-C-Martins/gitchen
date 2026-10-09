@@ -4,6 +4,8 @@ import { supabase } from './lib/supabase'
 import type { Recipe, RecipeInput } from './types'
 import AuthPanel from './components/AuthPanel'
 import RecipeForm from './components/RecipeForm'
+import ReportButton from './components/ReportButton'
+import AdminPanel from './components/AdminPanel'
 
 const THEME_KEY = 'gitchen:theme'
 
@@ -22,12 +24,16 @@ function getInitialTheme(): Theme {
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminVersion, setAdminVersion] = useState(0)
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
+
+  const userId = session?.user.id
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -42,11 +48,19 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (!userId) {
+      setIsAdmin(false)
+      return
+    }
+    void supabase.rpc('is_admin').then(({ data }) => setIsAdmin(data === true))
+  }, [userId])
+
   const loadRecipes = useCallback(async () => {
     const { data, error } = await supabase
       .from('recipes')
       .select(
-        'id,user_id,title,ingredients,steps,created_at,profiles(username,avatar_url)',
+        'id,user_id,title,ingredients,steps,created_at,profiles!recipes_user_id_fkey(username,avatar_url)',
       )
       .order('created_at', { ascending: false })
     if (error) {
@@ -84,8 +98,12 @@ export default function App() {
   const removeRecipe = async (id: string) => {
     if (!window.confirm('Apagar esta receita?')) return
     const { error } = await supabase.from('recipes').delete().eq('id', id)
-    if (error) setError(error.message)
-    else await loadRecipes()
+    if (error) {
+      setError(error.message)
+    } else {
+      setAdminVersion((v) => v + 1)
+      await loadRecipes()
+    }
   }
 
   const q = query.toLowerCase()
@@ -119,6 +137,10 @@ export default function App() {
         </header>
 
         <AuthPanel session={session} />
+
+        {isAdmin && (
+          <AdminPanel version={adminVersion} onRecipeDeleted={loadRecipes} />
+        )}
 
         {session && (
           <section className="mb-8 rounded-2xl bg-white p-5 shadow-md dark:bg-stone-800">
@@ -154,7 +176,7 @@ export default function App() {
 
         <div className="grid gap-4">
           {visible.map((r) => {
-            const isOwner = session?.user.id === r.user_id
+            const isOwner = userId === r.user_id
             return (
               <article
                 key={r.id}
@@ -194,20 +216,25 @@ export default function App() {
                         {r.steps}
                       </p>
                     )}
-                    {isOwner && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setEditingId(r.id)}
-                          className="rounded-lg border border-stone-300 px-3 py-1 text-sm text-stone-600 transition hover:bg-stone-100 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-700"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => void removeRecipe(r.id)}
-                          className="rounded-lg border border-stone-300 px-3 py-1 text-sm text-stone-600 transition hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-stone-600 dark:text-stone-300 dark:hover:border-red-500 dark:hover:bg-red-950 dark:hover:text-red-400"
-                        >
-                          Apagar
-                        </button>
+                    {session && (
+                      <div className="flex flex-wrap items-start gap-2">
+                        {isOwner && (
+                          <button
+                            onClick={() => setEditingId(r.id)}
+                            className="rounded-lg border border-stone-300 px-3 py-1 text-sm text-stone-600 transition hover:bg-stone-100 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-700"
+                          >
+                            Editar
+                          </button>
+                        )}
+                        {(isOwner || isAdmin) && (
+                          <button
+                            onClick={() => void removeRecipe(r.id)}
+                            className="rounded-lg border border-stone-300 px-3 py-1 text-sm text-stone-600 transition hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-stone-600 dark:text-stone-300 dark:hover:border-red-500 dark:hover:bg-red-950 dark:hover:text-red-400"
+                          >
+                            {isOwner ? 'Apagar' : 'Apagar (admin)'}
+                          </button>
+                        )}
+                        {!isOwner && <ReportButton recipeId={r.id} />}
                       </div>
                     )}
                   </>
