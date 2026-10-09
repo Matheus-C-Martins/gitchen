@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Recipe, RecipeInput } from '../types'
+import { fetchFavoriteIds } from '../lib/favorites'
 import { fetchRecipe } from '../lib/recipes'
 import { goHome, recipeUrl } from '../lib/route'
 import RecipeForm from './RecipeForm'
@@ -12,6 +13,7 @@ interface Props {
   version: number
   suggestions: string[]
   onTagClick: (tag: string) => void
+  onToggleFavorite: (recipeId: string, favorite: boolean) => Promise<boolean>
   onUpdate: (
     recipe: Recipe,
     input: RecipeInput,
@@ -30,10 +32,12 @@ export default function RecipePage({
   version,
   suggestions,
   onTagClick,
+  onToggleFavorite,
   onUpdate,
   onRemove,
 }: Props) {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
+  const [favorite, setFavorite] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
@@ -41,16 +45,20 @@ export default function RecipePage({
 
   useEffect(() => {
     let cancelled = false
-    void fetchRecipe(id).then((res) => {
+    void (async () => {
+      const res = await fetchRecipe(id)
+      const favs =
+        userId && res.recipe ? await fetchFavoriteIds([id]) : new Set<string>()
       if (cancelled) return
       setRecipe(res.recipe)
+      setFavorite(favs.has(id))
       setError(res.error)
       setLoading(false)
-    })
+    })()
     return () => {
       cancelled = true
     }
-  }, [id, version])
+  }, [id, userId, version])
 
   useEffect(() => {
     const previous = document.title
@@ -73,6 +81,14 @@ export default function RecipePage({
   const handleDelete = async () => {
     if (!recipe) return
     if (await onRemove(recipe)) goHome()
+  }
+
+  const handleFavorite = async () => {
+    if (!recipe) return
+    const next = !favorite
+    setFavorite(next)
+    const ok = await onToggleFavorite(recipe.id, next)
+    if (!ok) setFavorite(!next)
   }
 
   const handleUpdate = async (
@@ -136,6 +152,8 @@ export default function RecipePage({
               recipe={recipe}
               userId={userId}
               isAdmin={isAdmin}
+              favorite={favorite}
+              onToggleFavorite={() => void handleFavorite()}
               onTagClick={onTagClick}
               onEdit={() => setEditing(true)}
               onDelete={() => void handleDelete()}

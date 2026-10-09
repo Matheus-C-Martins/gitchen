@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import { fetchFavoriteIds, setFavorite } from './lib/favorites'
 import { removeRecipePhoto } from './lib/photos'
 import {
   PAGE_SIZE,
+  fetchFavoriteRecipesPage,
   fetchRecipesPage,
   fetchTagCounts,
   saveRecipeTags,
@@ -44,6 +46,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminVersion, setAdminVersion] = useState(0)
   const [recipes, setRecipes] = useState<Recipe[]>([])
+  const [favIds, setFavIds] = useState<Set<string>>(new Set())
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
   const [reloadKey, setReloadKey] = useState(0)
@@ -54,6 +57,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [tag, setTag] = useState<string | null>(null)
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [tagCounts, setTagCounts] = useState<TagCount[]>([])
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
   const requestRef = useRef(0)
@@ -61,6 +65,7 @@ export default function App() {
   const route = useHashRoute()
   const routeId = route.name === 'recipe' ? route.id : null
   const userId = session?.user.id
+  const onlyFavorites = favoritesOnly && userId !== undefined
   const suggestions = tagCounts.map((t) => t.name)
   const error = actionError ?? listError
 
@@ -96,7 +101,14 @@ export default function App() {
 
   useEffect(() => {
     const request = ++requestRef.current
-    void fetchRecipesPage(page, debouncedQuery, tag).then((res) => {
+    void (async () => {
+      const res = onlyFavorites
+        ? await fetchFavoriteRecipesPage(page, debouncedQuery, tag)
+        : await fetchRecipesPage(page, debouncedQuery, tag)
+      const favs =
+        userId && !res.error
+          ? await fetchFavoriteIds(res.recipes.map((r) => r.id))
+          : new Set<string>()
       if (request !== requestRef.current) return
       if (res.error) {
         setListError(res.error)
@@ -110,10 +122,11 @@ export default function App() {
       }
       setListError(null)
       setRecipes(res.recipes)
+      setFavIds(favs)
       setTotal(res.total)
       setLoading(false)
-    })
-  }, [page, debouncedQuery, tag, reloadKey])
+    })()
+  }, [page, debouncedQuery, tag, onlyFavorites, userId, reloadKey])
 
   useEffect(() => {
     let cancelled = false
@@ -147,6 +160,40 @@ export default function App() {
     setPage(0)
     setActionError(null)
     if (routeId) goHome()
+  }
+
+  const toggleFavoritesOnly = () => {
+    setFavoritesOnly((v) => !v)
+    setPage(0)
+    setActionError(null)
+  }
+
+  const toggleFavorite = async (
+    recipeId: string,
+    favorite: boolean,
+  ): Promise<boolean> => {
+    setActionError(null)
+    const failure = await setFavorite(recipeId, favorite)
+    if (failure) {
+      setActionError(failure)
+      return false
+    }
+    if (onlyFavorites && !favorite) refresh()
+    return true
+  }
+
+  const markFavorite = (recipeId: string, favorite: boolean) =>
+    setFavIds((prev) => {
+      const next = new Set(prev)
+      if (favorite) next.add(recipeId)
+      else next.delete(recipeId)
+      return next
+    })
+
+  const handleListFavorite = async (recipeId: string, favorite: boolean) => {
+    markFavorite(recipeId, favorite)
+    const ok = await toggleFavorite(recipeId, favorite)
+    if (!ok) markFavorite(recipeId, !favorite)
   }
 
   const createRecipe = async (
@@ -274,6 +321,7 @@ export default function App() {
             version={reloadKey}
             suggestions={suggestions}
             onTagClick={selectTag}
+            onToggleFavorite={toggleFavorite}
             onUpdate={updateRecipe}
             onRemove={removeRecipe}
           />
@@ -298,15 +346,27 @@ export default function App() {
               onChange={(e) => changeQuery(e.target.value)}
             />
 
-            {chips.length > 0 && (
-              <div className="mb-3 flex flex-wrap gap-2" aria-label="Filtrar por etiqueta">
-                <button
-                  type="button"
-                  onClick={() => selectTag(null)}
-                  className={`${chipBase} ${tag === null ? chipOn : chipOff}`}
-                >
-                  Todas
-                </button>
+            {(session || chips.length > 0) && (
+              <div className="mb-3 flex flex-wrap gap-2" aria-label="Filtros">
+                {session && (
+                  <button
+                    type="button"
+                    aria-pressed={onlyFavorites}
+                    onClick={toggleFavoritesOnly}
+                    className={`${chipBase} ${onlyFavorites ? chipOn : chipOff}`}
+                  >
+                    ♥ Favoritas
+                  </button>
+                )}
+                {chips.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => selectTag(null)}
+                    className={`${chipBase} ${tag === null ? chipOn : chipOff}`}
+                  >
+                    Todas
+                  </button>
+                )}
                 {chips.map((t) => (
                   <button
                     key={t.name}
@@ -334,7 +394,9 @@ export default function App() {
 
             {!loading && recipes.length === 0 && (
               <p className="py-8 text-center text-stone-500 dark:text-stone-400">
-                Sem receitas para mostrar.
+                {onlyFavorites && !tag && !debouncedQuery
+                  ? 'Ainda não tens receitas favoritas.'
+                  : 'Sem receitas para mostrar.'}
               </p>
             )}
 
@@ -363,6 +425,10 @@ export default function App() {
                       userId={userId}
                       isAdmin={isAdmin}
                       asLink
+                      favorite={favIds.has(r.id)}
+                      onToggleFavorite={() =>
+                        void handleListFavorite(r.id, !favIds.has(r.id))
+                      }
                       onTagClick={selectTag}
                       onEdit={() => setEditingId(r.id)}
                       onDelete={() => void removeRecipe(r)}

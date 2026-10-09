@@ -32,6 +32,34 @@ export async function fetchRecipesPage(
   return { recipes: data ?? [], total: count ?? 0, error: null }
 }
 
+export async function fetchFavoriteRecipesPage(
+  page: number,
+  search: string,
+  tag: string | null,
+): Promise<{ recipes: Recipe[]; total: number; error: string | null }> {
+  const from = page * PAGE_SIZE
+  const term = search.trim().toLowerCase()
+  const base = supabase
+    .from('favorites')
+    .select(
+      'created_at,recipes!inner(id,user_id,title,ingredients,steps,photo_path,tag_names,created_at,profiles!recipes_user_id_fkey(username,avatar_url))',
+      { count: 'exact' },
+    )
+  const searched = term
+    ? base.ilike('recipes.search_text', `%${escapeLike(term)}%`)
+    : base
+  const filtered = tag ? searched.contains('recipes.tag_names', [tag]) : searched
+  const { data, count, error } = await filtered
+    .order('created_at', { ascending: false })
+    .range(from, from + PAGE_SIZE - 1)
+  if (error) return { recipes: [], total: 0, error: error.message }
+  return {
+    recipes: (data ?? []).map((f) => f.recipes),
+    total: count ?? 0,
+    error: null,
+  }
+}
+
 export async function fetchRecipe(
   id: string,
 ): Promise<{ recipe: Recipe | null; error: string | null }> {
