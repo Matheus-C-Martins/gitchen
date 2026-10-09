@@ -53,7 +53,7 @@ export default function App() {
       setError(error.message)
     } else {
       setError(null)
-      setRecipes((data ?? []) as unknown as Recipe[])
+      setRecipes(data ?? [])
     }
     setLoading(false)
   }, [])
