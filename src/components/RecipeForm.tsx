@@ -6,13 +6,12 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
+import { Check, LoaderCircle, X } from 'lucide-react'
 import type { Recipe, RecipeInput } from '../types'
 import { removeRecipePhoto } from '../lib/photos'
 import { MAX_TAGS, MAX_TAG_LENGTH, normalizeTag } from '../lib/tags'
+import { btn, btnPrimary, inputClass, tagPill } from '../lib/ui'
 import PhotoUpload from './PhotoUpload'
-
-const inputClass =
-  'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-800 placeholder:text-stone-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:border-stone-600 dark:bg-stone-700 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:ring-orange-500/40'
 
 interface Props {
   userId: string
@@ -22,6 +21,9 @@ interface Props {
   onSubmit: (input: RecipeInput, tags: string[]) => Promise<boolean>
   onCancel?: () => void
 }
+
+const field = 'flex flex-col gap-1.5'
+const fieldLabel = 'text-sm font-medium'
 
 export default function RecipeForm({
   userId,
@@ -127,57 +129,70 @@ export default function RecipeForm({
   }
 
   return (
-    <form onSubmit={(e) => void handle(e)} className="flex flex-col gap-3">
-      <input
-        className={inputClass}
-        placeholder="Título da receita"
-        maxLength={120}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <textarea
-        className={inputClass}
-        placeholder="Ingredientes (um por linha)"
-        rows={4}
-        value={ingredients}
-        onChange={(e) => setIngredients(e.target.value)}
-      />
-      <textarea
-        className={inputClass}
-        placeholder="Modo de preparação"
-        rows={4}
-        maxLength={10000}
-        value={steps}
-        onChange={(e) => setSteps(e.target.value)}
-      />
-      <div className="flex flex-col gap-2">
+    <form onSubmit={(e) => void handle(e)} className="flex flex-col gap-5">
+      <label className={field}>
+        <span className={fieldLabel}>Título</span>
+        <input
+          className={inputClass}
+          placeholder="Ex.: Bacalhau à Brás"
+          maxLength={120}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </label>
+
+      <label className={field}>
+        <span className={fieldLabel}>Ingredientes</span>
+        <textarea
+          className={inputClass}
+          placeholder="Um por linha"
+          rows={5}
+          value={ingredients}
+          onChange={(e) => setIngredients(e.target.value)}
+        />
+      </label>
+
+      <label className={field}>
+        <span className={fieldLabel}>Modo de preparação</span>
+        <textarea
+          className={inputClass}
+          placeholder="Um passo por linha"
+          rows={6}
+          maxLength={10000}
+          value={steps}
+          onChange={(e) => setSteps(e.target.value)}
+        />
+      </label>
+
+      <div className={field}>
+        <label htmlFor={`${listId}-tags`} className={fieldLabel}>
+          Etiquetas
+        </label>
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.map((t) => (
-              <span
-                key={t}
-                className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-0.5 text-sm text-orange-800 dark:bg-orange-950 dark:text-orange-200"
-              >
+              <span key={t} className={`${tagPill} min-h-8 pl-3 text-sm`}>
                 #{t}
                 <button
                   type="button"
                   aria-label={`Remover etiqueta ${t}`}
                   onClick={() => setTags(tags.filter((x) => x !== t))}
-                  className="leading-none"
+                  className="inline-flex size-6 items-center justify-center rounded-full hover:bg-accent/15"
                 >
-                  ×
+                  <X className="size-3.5" aria-hidden />
                 </button>
               </span>
             ))}
           </div>
         )}
         <input
+          id={`${listId}-tags`}
           className={inputClass}
           list={listId}
           placeholder={
             tags.length >= MAX_TAGS
               ? 'Máximo de etiquetas atingido'
-              : 'Etiquetas (Enter para adicionar, até 5)'
+              : 'Enter para adicionar (até 5)'
           }
           maxLength={60}
           disabled={tags.length >= MAX_TAGS}
@@ -193,10 +208,9 @@ export default function RecipeForm({
               <option key={s} value={s} />
             ))}
         </datalist>
-        {tagError && (
-          <p className="text-sm text-red-600 dark:text-red-400">{tagError}</p>
-        )}
+        {tagError && <p className="text-sm text-danger">{tagError}</p>}
       </div>
+
       <PhotoUpload
         key={photoKey}
         userId={userId}
@@ -204,20 +218,18 @@ export default function RecipeForm({
         onChange={handlePhoto}
         disabled={busy}
       />
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-orange-600 px-4 py-2 font-medium text-white transition hover:bg-orange-700 disabled:opacity-50"
-        >
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        <button type="submit" disabled={busy} className={btnPrimary}>
+          {busy ? (
+            <LoaderCircle className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Check className="size-4" aria-hidden />
+          )}
           {submitLabel}
         </button>
         {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-stone-300 px-4 py-2 text-sm transition hover:bg-stone-100 dark:border-stone-600 dark:hover:bg-stone-700"
-          >
+          <button type="button" onClick={onCancel} className={btn}>
             Cancelar
           </button>
         )}

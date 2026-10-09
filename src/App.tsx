@@ -1,5 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import {
+  BookOpen,
+  ChefHat,
+  CircleAlert,
+  Heart,
+  Moon,
+  Plus,
+  Search,
+  Sun,
+  X,
+} from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { fetchFavoriteIds, setFavorite } from './lib/favorites'
 import { removeRecipePhoto } from './lib/photos'
@@ -13,25 +24,26 @@ import {
 } from './lib/recipes'
 import { goHome, useHashRoute } from './lib/route'
 import { sameTags } from './lib/tags'
+import {
+  btnPrimary,
+  chipBase,
+  chipOff,
+  chipOn,
+  iconBtn,
+  searchClass,
+} from './lib/ui'
 import type { Recipe, RecipeInput } from './types'
-import AuthPanel from './components/AuthPanel'
-import RecipeForm from './components/RecipeForm'
-import RecipeView from './components/RecipeView'
-import RecipePage from './components/RecipePage'
-import Pagination from './components/Pagination'
 import AdminPanel from './components/AdminPanel'
+import AuthPanel from './components/AuthPanel'
+import Modal from './components/Modal'
+import Pagination from './components/Pagination'
+import RecipeCard from './components/RecipeCard'
+import RecipeForm from './components/RecipeForm'
+import RecipePage from './components/RecipePage'
 
 const THEME_KEY = 'gitchen:theme'
 
 type Theme = 'light' | 'dark'
-
-const inputClass =
-  'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-800 placeholder:text-stone-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:border-stone-600 dark:bg-stone-700 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:ring-orange-500/40'
-
-const chipBase = 'rounded-full px-3 py-0.5 text-sm transition'
-const chipOff =
-  'bg-white text-stone-600 hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
-const chipOn = 'bg-orange-600 text-white hover:bg-orange-700'
 
 function getInitialTheme(): Theme {
   const saved = localStorage.getItem(THEME_KEY)
@@ -53,7 +65,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [tag, setTag] = useState<string | null>(null)
@@ -275,166 +287,231 @@ export default function App() {
       : tagCounts
 
   return (
-    <div className="min-h-screen bg-amber-50 font-sans text-stone-800 transition-colors dark:bg-stone-900 dark:text-stone-100">
-      <main className="mx-auto max-w-2xl px-4 py-10">
-        <header className="relative mb-8 text-center">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={
-              theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'
-            }
-            title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
-            className="absolute right-0 top-0 rounded-full border border-stone-300 bg-white p-2 text-xl leading-none shadow-sm transition hover:bg-stone-100 dark:border-stone-600 dark:bg-stone-800 dark:hover:bg-stone-700"
+    <div className="min-h-dvh">
+      <header className="sticky top-0 z-30 border-b border-line bg-paper/85 backdrop-blur">
+        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
+          <a
+            href="#/"
+            className="flex items-center gap-2 font-serif text-xl font-semibold"
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
-          <h1 className="text-4xl font-bold tracking-tight text-orange-600 dark:text-orange-400">
-            <a href="#/">🍳 Gitchen</a>
-          </h1>
-          <p className="mt-1 text-stone-500 dark:text-stone-400">
-            O livro de receitas de todos
-          </p>
-        </header>
+            <ChefHat className="size-6 text-accent" aria-hidden />
+            Gitchen
+          </a>
+          <div className="flex items-center gap-2">
+            <AuthPanel session={session} />
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={
+                theme === 'dark'
+                  ? 'Mudar para tema claro'
+                  : 'Mudar para tema escuro'
+              }
+              title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+              className={iconBtn}
+            >
+              {theme === 'dark' ? (
+                <Sun className="size-5" aria-hidden />
+              ) : (
+                <Moon className="size-5" aria-hidden />
+              )}
+            </button>
+          </div>
+        </div>
+      </header>
 
-        <AuthPanel session={session} />
-
+      <main className="mx-auto w-full max-w-5xl px-4 pb-28 sm:px-6 sm:pb-12">
         {isAdmin && (
-          <AdminPanel
-            version={adminVersion}
-            onRecipeDeleted={async () => refresh()}
-          />
+          <div className="mt-6">
+            <AdminPanel
+              version={adminVersion}
+              onRecipeDeleted={async () => refresh()}
+            />
+          </div>
         )}
 
         {error && (
-          <p className="mb-4 rounded-lg bg-red-100 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-            {error}
-          </p>
+          <div
+            role="alert"
+            className="mt-6 flex items-start gap-2 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger"
+          >
+            <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <span>{error}</span>
+          </div>
         )}
 
         {routeId ? (
-          <RecipePage
-            key={routeId}
-            id={routeId}
-            userId={userId}
-            isAdmin={isAdmin}
-            version={reloadKey}
-            suggestions={suggestions}
-            onTagClick={selectTag}
-            onToggleFavorite={toggleFavorite}
-            onUpdate={updateRecipe}
-            onRemove={removeRecipe}
-          />
+          <div className="mx-auto mt-6 max-w-4xl sm:mt-8">
+            <RecipePage
+              key={routeId}
+              id={routeId}
+              userId={userId}
+              isAdmin={isAdmin}
+              version={reloadKey}
+              suggestions={suggestions}
+              onTagClick={selectTag}
+              onToggleFavorite={toggleFavorite}
+              onUpdate={updateRecipe}
+              onRemove={removeRecipe}
+            />
+          </div>
         ) : (
           <>
-            {session && (
-              <section className="mb-8 rounded-2xl bg-white p-5 shadow-md dark:bg-stone-800">
-                <h2 className="mb-3 text-lg font-semibold">Nova receita</h2>
-                <RecipeForm
-                  userId={session.user.id}
-                  suggestions={suggestions}
-                  submitLabel="Adicionar receita"
-                  onSubmit={createRecipe}
+            <section className="cover mt-6 rounded-3xl px-5 py-10 text-center sm:mt-10 sm:px-10 sm:py-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
+                O livro de receitas de todos
+              </p>
+              <h1 className="mt-3 font-serif text-5xl font-semibold tracking-tight sm:text-7xl">
+                Gitchen
+              </h1>
+              <div className="ornament mx-auto mt-5 max-w-xs" aria-hidden>
+                <ChefHat className="size-5" />
+              </div>
+              <p className="mx-auto mt-4 max-w-md text-balance text-muted">
+                Receitas partilhadas por quem cozinha. Lê, guarda as tuas
+                favoritas e junta as tuas.
+              </p>
+
+              <div className="relative mx-auto mt-7 max-w-lg">
+                <Search
+                  className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted"
+                  aria-hidden
                 />
+                <input
+                  type="search"
+                  aria-label="Pesquisar receitas"
+                  placeholder="Pesquisar por título ou ingrediente"
+                  value={query}
+                  onChange={(e) => changeQuery(e.target.value)}
+                  className={searchClass}
+                />
+                {query && (
+                  <button
+                    type="button"
+                    aria-label="Limpar pesquisa"
+                    title="Limpar pesquisa"
+                    onClick={() => changeQuery('')}
+                    className="absolute right-1.5 top-1/2 inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full text-muted transition hover:bg-accent-soft hover:text-ink"
+                  >
+                    <X className="size-4" aria-hidden />
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-6 hidden sm:block">
+                {session ? (
+                  <button
+                    type="button"
+                    onClick={() => setCreateOpen(true)}
+                    className={btnPrimary}
+                  >
+                    <Plus className="size-4" aria-hidden />
+                    Nova receita
+                  </button>
+                ) : (
+                  <p className="text-sm text-muted">
+                    Inicia sessão com o GitHub para adicionar e gerir as tuas
+                    receitas.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            {(session || chips.length > 0) && (
+              <section aria-label="Índice" className="mt-8">
+                <h2 className="mb-3 flex items-center gap-2 font-serif text-xl font-semibold">
+                  <BookOpen className="size-5 text-accent" aria-hidden />
+                  Índice
+                </h2>
+                <div
+                  role="group"
+                  aria-label="Filtros"
+                  className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+                >
+                  {session && (
+                    <button
+                      type="button"
+                      aria-pressed={onlyFavorites}
+                      onClick={toggleFavoritesOnly}
+                      className={`${chipBase} ${onlyFavorites ? chipOn : chipOff}`}
+                    >
+                      <Heart
+                        className="size-4"
+                        fill={onlyFavorites ? 'currentColor' : 'none'}
+                        aria-hidden
+                      />
+                      Favoritas
+                    </button>
+                  )}
+                  {chips.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => selectTag(null)}
+                      className={`${chipBase} ${tag === null ? chipOn : chipOff}`}
+                    >
+                      Todas
+                    </button>
+                  )}
+                  {chips.map((t) => (
+                    <button
+                      key={t.name}
+                      type="button"
+                      onClick={() => selectTag(tag === t.name ? null : t.name)}
+                      className={`${chipBase} ${tag === t.name ? chipOn : chipOff}`}
+                    >
+                      #{t.name}
+                    </button>
+                  ))}
+                </div>
               </section>
             )}
 
-            <input
-              className={`${inputClass} mb-3`}
-              placeholder="Pesquisar por título ou ingrediente"
-              value={query}
-              onChange={(e) => changeQuery(e.target.value)}
-            />
+            <div className="mb-5 mt-8 flex items-baseline justify-between gap-3">
+              <h2 className="font-serif text-2xl font-semibold">Receitas</h2>
+              {!loading && (
+                <p className="text-sm text-muted">
+                  {total === 1 ? '1 receita' : `${total} receitas`}
+                </p>
+              )}
+            </div>
 
-            {(session || chips.length > 0) && (
-              <div className="mb-3 flex flex-wrap gap-2" aria-label="Filtros">
-                {session && (
-                  <button
-                    type="button"
-                    aria-pressed={onlyFavorites}
-                    onClick={toggleFavoritesOnly}
-                    className={`${chipBase} ${onlyFavorites ? chipOn : chipOff}`}
-                  >
-                    ♥ Favoritas
-                  </button>
-                )}
-                {chips.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => selectTag(null)}
-                    className={`${chipBase} ${tag === null ? chipOn : chipOff}`}
-                  >
-                    Todas
-                  </button>
-                )}
-                {chips.map((t) => (
-                  <button
-                    key={t.name}
-                    type="button"
-                    onClick={() => selectTag(tag === t.name ? null : t.name)}
-                    className={`${chipBase} ${tag === t.name ? chipOn : chipOff}`}
-                  >
-                    #{t.name}
-                  </button>
+            {loading && recipes.length === 0 && (
+              <div
+                aria-busy
+                className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+              >
+                {Array.from({ length: 6 }, (_, i) => (
+                  <div
+                    key={i}
+                    className="h-72 animate-pulse rounded-2xl border border-line bg-card"
+                  />
                 ))}
               </div>
             )}
 
-            {!loading && (
-              <p className="mb-6 text-sm text-stone-500 dark:text-stone-400">
-                {total === 1 ? '1 receita' : `${total} receitas`}
-              </p>
-            )}
-
-            {loading && (
-              <p className="py-8 text-center text-stone-500 dark:text-stone-400">
-                A carregar receitas…
-              </p>
-            )}
-
             {!loading && recipes.length === 0 && (
-              <p className="py-8 text-center text-stone-500 dark:text-stone-400">
-                {onlyFavorites && !tag && !debouncedQuery
-                  ? 'Ainda não tens receitas favoritas.'
-                  : 'Sem receitas para mostrar.'}
-              </p>
+              <div className="flex flex-col items-center gap-3 py-16 text-center text-muted">
+                <ChefHat className="size-12 text-accent/50" aria-hidden />
+                <p>
+                  {onlyFavorites && !tag && !debouncedQuery
+                    ? 'Ainda não tens receitas favoritas.'
+                    : 'Sem receitas para mostrar.'}
+                </p>
+              </div>
             )}
 
-            <div className="grid gap-4">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {recipes.map((r) => (
-                <article
+                <RecipeCard
                   key={r.id}
-                  className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-md transition hover:shadow-lg dark:bg-stone-800"
-                >
-                  {editingId === r.id ? (
-                    <RecipeForm
-                      userId={userId ?? ''}
-                      initial={r}
-                      suggestions={suggestions}
-                      submitLabel="Guardar"
-                      onSubmit={async (input, tags) => {
-                        const ok = await updateRecipe(r, input, tags)
-                        if (ok) setEditingId(null)
-                        return ok
-                      }}
-                      onCancel={() => setEditingId(null)}
-                    />
-                  ) : (
-                    <RecipeView
-                      recipe={r}
-                      userId={userId}
-                      isAdmin={isAdmin}
-                      asLink
-                      favorite={favIds.has(r.id)}
-                      onToggleFavorite={() =>
-                        void handleListFavorite(r.id, !favIds.has(r.id))
-                      }
-                      onTagClick={selectTag}
-                      onEdit={() => setEditingId(r.id)}
-                      onDelete={() => void removeRecipe(r)}
-                    />
-                  )}
-                </article>
+                  recipe={r}
+                  loggedIn={session !== null}
+                  favorite={favIds.has(r.id)}
+                  onToggleFavorite={() =>
+                    void handleListFavorite(r.id, !favIds.has(r.id))
+                  }
+                  onTagClick={selectTag}
+                />
               ))}
             </div>
 
@@ -446,6 +523,40 @@ export default function App() {
           </>
         )}
       </main>
+
+      <footer className="border-t border-line py-8 text-center text-sm text-muted">
+        Gitchen · O livro de receitas de todos
+      </footer>
+
+      {session && !routeId && (
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          aria-label="Nova receita"
+          title="Nova receita"
+          className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 inline-flex size-14 items-center justify-center rounded-full bg-accent text-accent-ink shadow-xl transition active:scale-95 sm:hidden"
+        >
+          <Plus className="size-6" aria-hidden />
+        </button>
+      )}
+
+      <Modal
+        open={createOpen && session !== null}
+        title="Nova receita"
+        onClose={() => setCreateOpen(false)}
+      >
+        <RecipeForm
+          userId={userId ?? ''}
+          suggestions={suggestions}
+          submitLabel="Adicionar receita"
+          onSubmit={async (input, tags) => {
+            const ok = await createRecipe(input, tags)
+            if (ok) setCreateOpen(false)
+            return ok
+          }}
+          onCancel={() => setCreateOpen(false)}
+        />
+      </Modal>
     </div>
   )
 }

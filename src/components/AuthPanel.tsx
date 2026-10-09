@@ -1,10 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
+import { LogIn, LogOut, UserRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-
-const primaryBtn =
-  'rounded-lg bg-orange-600 px-4 py-2 font-medium text-white transition hover:bg-orange-700'
-const secondaryBtn =
-  'rounded-lg border border-stone-300 px-4 py-2 text-sm transition hover:bg-stone-100 dark:border-stone-600 dark:hover:bg-stone-700'
+import { btnPrimary, iconBtn } from '../lib/ui'
 
 export default function AuthPanel({ session }: { session: Session | null }) {
   if (session) {
@@ -14,25 +11,30 @@ export default function AuthPanel({ session }: { session: Session | null }) {
     }
     const name = meta.user_name ?? session.user.email ?? 'utilizador'
     return (
-      <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-md dark:bg-stone-800">
-        <span className="flex items-center gap-2 text-sm">
-          {meta.avatar_url && (
-            <img
-              src={meta.avatar_url}
-              alt=""
-              className="h-8 w-8 rounded-full"
-            />
-          )}
-          <span>
-            Sessão iniciada como <strong>{name}</strong>
-          </span>
+      <div className="flex items-center gap-1.5">
+        {meta.avatar_url ? (
+          <img
+            src={meta.avatar_url}
+            alt=""
+            className="size-8 rounded-full ring-2 ring-line"
+          />
+        ) : (
+          <UserRound className="size-6 text-muted" aria-hidden />
+        )}
+        <span
+          className="hidden max-w-36 truncate text-sm sm:inline"
+          title={`Sessão iniciada como ${name}`}
+        >
+          {name}
         </span>
         <button
           type="button"
           onClick={() => void supabase.auth.signOut()}
-          className={secondaryBtn}
+          aria-label="Terminar sessão"
+          title="Terminar sessão"
+          className={iconBtn}
         >
-          Terminar sessão
+          <LogOut className="size-5" aria-hidden />
         </button>
       </div>
     )
@@ -45,13 +47,9 @@ export default function AuthPanel({ session }: { session: Session | null }) {
     })
 
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-md dark:bg-stone-800">
-      <p className="text-sm text-stone-600 dark:text-stone-300">
-        Inicia sessão com o GitHub para adicionar e gerir as tuas receitas.
-      </p>
-      <button type="button" onClick={signInWithGitHub} className={primaryBtn}>
-        Entrar com GitHub
-      </button>
-    </div>
+    <button type="button" onClick={signInWithGitHub} className={btnPrimary}>
+      <LogIn className="size-4" aria-hidden />
+      Entrar<span className="hidden sm:inline"> com GitHub</span>
+    </button>
   )
 }

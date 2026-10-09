@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
+import { ArrowLeft, Check, Link2 } from 'lucide-react'
 import type { Recipe, RecipeInput } from '../types'
 import { fetchFavoriteIds } from '../lib/favorites'
 import { fetchRecipe } from '../lib/recipes'
 import { goHome, recipeUrl } from '../lib/route'
+import { btn } from '../lib/ui'
+import Modal from './Modal'
 import RecipeForm from './RecipeForm'
 import RecipeView from './RecipeView'
 
@@ -21,9 +24,6 @@ interface Props {
   ) => Promise<boolean>
   onRemove: (recipe: Recipe) => Promise<boolean>
 }
-
-const linkBtn =
-  'rounded-lg border border-stone-300 bg-white px-3 py-1 text-sm text-stone-600 transition hover:bg-stone-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
 
 export default function RecipePage({
   id,
@@ -106,61 +106,72 @@ export default function RecipePage({
   }
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-3">
-        <a href="#/" className={linkBtn}>
-          ← Todas as receitas
+        <a href="#/" className={btn}>
+          <ArrowLeft className="size-4" aria-hidden />
+          Todas as receitas
         </a>
         {recipe && (
-          <button type="button" onClick={() => void copyLink()} className={linkBtn}>
+          <button type="button" onClick={() => void copyLink()} className={btn}>
+            {copied ? (
+              <Check className="size-4 text-accent" aria-hidden />
+            ) : (
+              <Link2 className="size-4" aria-hidden />
+            )}
             {copied ? 'Ligação copiada' : 'Copiar ligação'}
           </button>
         )}
       </div>
 
       {loading && (
-        <p className="py-8 text-center text-stone-500 dark:text-stone-400">
-          A carregar receita…
-        </p>
+        <div
+          aria-busy
+          className="h-96 animate-pulse rounded-3xl border border-line bg-card"
+        />
       )}
 
       {!loading && error && !recipe && (
-        <p className="rounded-lg bg-red-100 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <p className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
           {error}
         </p>
       )}
 
       {!loading && !error && !recipe && (
-        <p className="py-8 text-center text-stone-500 dark:text-stone-400">
+        <p className="py-12 text-center text-muted">
           Receita não encontrada. Pode ter sido apagada.
         </p>
       )}
 
       {recipe && (
-        <article className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-md dark:bg-stone-800">
-          {editing ? (
-            <RecipeForm
-              userId={userId ?? ''}
-              initial={recipe}
-              suggestions={suggestions}
-              submitLabel="Guardar"
-              onSubmit={(input, tags) => handleUpdate(recipe, input, tags)}
-              onCancel={() => setEditing(false)}
-            />
-          ) : (
-            <RecipeView
-              recipe={recipe}
-              userId={userId}
-              isAdmin={isAdmin}
-              favorite={favorite}
-              onToggleFavorite={() => void handleFavorite()}
-              onTagClick={onTagClick}
-              onEdit={() => setEditing(true)}
-              onDelete={() => void handleDelete()}
-            />
-          )}
-        </article>
+        <RecipeView
+          recipe={recipe}
+          userId={userId}
+          isAdmin={isAdmin}
+          favorite={favorite}
+          onToggleFavorite={() => void handleFavorite()}
+          onTagClick={onTagClick}
+          onEdit={() => setEditing(true)}
+          onDelete={() => void handleDelete()}
+        />
       )}
+
+      <Modal
+        open={editing && recipe !== null}
+        title="Editar receita"
+        onClose={() => setEditing(false)}
+      >
+        {recipe && (
+          <RecipeForm
+            userId={userId ?? ''}
+            initial={recipe}
+            suggestions={suggestions}
+            submitLabel="Guardar"
+            onSubmit={(input, tags) => handleUpdate(recipe, input, tags)}
+            onCancel={() => setEditing(false)}
+          />
+        )}
+      </Modal>
     </section>
   )
 }

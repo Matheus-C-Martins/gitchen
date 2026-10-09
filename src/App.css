@@ -1,3 +1,150 @@
 @import "tailwindcss";
+@import "@fontsource-variable/fraunces";
+@import "@fontsource-variable/inter";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --paper: #f8f1e3;
+  --card: #fffdf8;
+  --ink: #2d2118;
+  --muted: #7b6957;
+  --line: #e7dac1;
+  --accent: #b5452b;
+  --accent-ink: #ffffff;
+  --accent-soft: #f6e2d6;
+  --danger: #b3261e;
+  --danger-soft: #fbe4e1;
+}
+
+.dark {
+  --paper: #1b1612;
+  --card: #251f19;
+  --ink: #f3eadb;
+  --muted: #b0a28f;
+  --line: #3a3027;
+  --accent: #e8825f;
+  --accent-ink: #1b1612;
+  --accent-soft: #3a261d;
+  --danger: #f29b92;
+  --danger-soft: #3b1f1c;
+}
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces Variable", ui-serif, Georgia, serif;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+}
+
+@layer base {
+  html {
+    background-color: var(--paper);
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    min-height: 100dvh;
+    font-family: var(--font-sans);
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 0%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 40%),
+      radial-gradient(circle at 100% 35%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 35%);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  summary,
+  select:not(:disabled),
+  input[type="file"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input[type="file"]::file-selector-button {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .cover {
+    border: 1px solid var(--line);
+    background-color: var(--card);
+    box-shadow:
+      inset 0 0 0 6px var(--card),
+      inset 0 0 0 7px var(--line),
+      0 18px 40px -24px rgb(60 35 15 / 0.35);
+  }
+
+  .ornament {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--muted);
+  }
+
+  .ornament::before,
+  .ornament::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+  }
+
+  .ornament::before {
+    background: linear-gradient(to right, transparent, var(--line));
+  }
+
+  .ornament::after {
+    background: linear-gradient(to left, transparent, var(--line));
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

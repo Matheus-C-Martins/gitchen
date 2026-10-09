@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Check, ShieldCheck, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { removeRecipePhoto } from '../lib/photos'
+import { recipeHref } from '../lib/route'
+import { btn, btnDanger } from '../lib/ui'
 
 interface ReportRow {
   id: string
@@ -19,11 +22,6 @@ interface Props {
   version: number
   onRecipeDeleted: () => Promise<void>
 }
-
-const btn =
-  'rounded-lg border border-stone-300 px-3 py-1 text-sm text-stone-600 transition hover:bg-stone-100 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-700'
-const dangerBtn =
-  'rounded-lg border border-stone-300 px-3 py-1 text-sm text-stone-600 transition hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-stone-600 dark:text-stone-300 dark:hover:border-red-500 dark:hover:bg-red-950 dark:hover:text-red-400'
 
 export default function AdminPanel({ version, onRecipeDeleted }: Props) {
   const [reports, setReports] = useState<ReportRow[]>([])
@@ -69,45 +67,57 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
   }
 
   return (
-    <section className="mb-8 rounded-2xl border border-amber-300 bg-white p-5 shadow-md dark:border-amber-700 dark:bg-stone-800">
-      <h2 className="mb-3 text-lg font-semibold">
+    <section
+      aria-label="Moderação"
+      className="rounded-2xl border border-accent/40 bg-card p-5 shadow-sm"
+    >
+      <h2 className="mb-3 flex items-center gap-2 font-serif text-xl font-semibold">
+        <ShieldCheck className="size-5 text-accent" aria-hidden />
         Moderação ({reports.length})
       </h2>
 
       {error && (
-        <p className="mb-3 rounded-lg bg-red-100 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <p className="mb-3 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
         </p>
       )}
 
-      {loading && (
-        <p className="text-sm text-stone-500 dark:text-stone-400">A carregar…</p>
-      )}
+      {loading && <p className="text-sm text-muted">A carregar…</p>}
 
       {!loading && reports.length === 0 && (
-        <p className="text-sm text-stone-500 dark:text-stone-400">
-          Sem denúncias pendentes.
-        </p>
+        <p className="text-sm text-muted">Sem denúncias pendentes.</p>
       )}
 
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col gap-4">
         {reports.map((r) => (
           <li
             key={r.id}
-            className="flex flex-col gap-2 border-t border-stone-200 pt-3 dark:border-stone-700"
+            className="flex flex-col gap-2 border-t border-line pt-4"
           >
             <p className="font-medium">
-              {r.recipes?.title ?? 'Receita removida'}
+              {r.recipes ? (
+                <a
+                  href={recipeHref(r.recipes.id)}
+                  className="underline decoration-line underline-offset-4 hover:text-accent"
+                >
+                  {r.recipes.title}
+                </a>
+              ) : (
+                'Receita removida'
+              )}
             </p>
-            <p className="text-sm text-stone-600 dark:text-stone-300">
-              {r.reason || '(sem motivo)'}
-            </p>
-            <p className="text-xs text-stone-500 dark:text-stone-400">
+            <p className="text-sm">{r.reason || '(sem motivo)'}</p>
+            <p className="text-xs text-muted">
               Denunciada por {r.reporter?.username ?? 'desconhecido'} em{' '}
               {new Date(r.created_at).toLocaleDateString('pt-PT')}
             </p>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => void dismiss(r.id)} className={btn}>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void dismiss(r.id)}
+                className={btn}
+              >
+                <Check className="size-4" aria-hidden />
                 Ignorar denúncia
               </button>
               {r.recipes && (
@@ -116,8 +126,9 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
                   onClick={() =>
                     void deleteRecipe(r.recipes!.id, r.recipes!.photo_path)
                   }
-                  className={dangerBtn}
+                  className={btnDanger}
                 >
+                  <Trash2 className="size-4" aria-hidden />
                   Apagar receita
                 </button>
               )}
