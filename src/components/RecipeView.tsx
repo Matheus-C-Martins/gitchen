@@ -8,6 +8,8 @@ interface Props {
   userId: string | undefined
   isAdmin: boolean
   asLink?: boolean
+  favorite?: boolean
+  onToggleFavorite?: () => void
   onTagClick?: (tag: string) => void
   onEdit: () => void
   onDelete: () => void
@@ -20,6 +22,8 @@ export default function RecipeView({
   userId,
   isAdmin,
   asLink,
+  favorite = false,
+  onToggleFavorite,
   onTagClick,
   onEdit,
   onDelete,
@@ -79,6 +83,20 @@ export default function RecipeView({
       )}
       {loggedIn && (
         <div className="flex flex-wrap items-start gap-2">
+          {onToggleFavorite && (
+            <button
+              type="button"
+              aria-pressed={favorite}
+              onClick={onToggleFavorite}
+              className={`rounded-lg border px-3 py-1 text-sm transition ${
+                favorite
+                  ? 'border-orange-500 bg-orange-50 text-orange-700 hover:bg-orange-100 dark:bg-orange-950 dark:text-orange-300 dark:hover:bg-orange-900'
+                  : 'border-stone-300 text-stone-600 hover:bg-stone-100 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-700'
+              }`}
+            >
+              {favorite ? '♥ Favorita' : '♡ Favoritar'}
+            </button>
+          )}
           {isOwner && (
             <button
               onClick={onEdit}
