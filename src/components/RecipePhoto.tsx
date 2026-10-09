@@ -1,23 +1,20 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { recipePhotoUrl } from '../lib/photos'
 
-type Props = {
-  supabase: SupabaseClient
+interface Props {
   path: string | null | undefined
   alt: string
-  className?: string
 }
 
-export default function RecipePhoto({ supabase, path, alt, className }: Props) {
+export default function RecipePhoto({ path, alt }: Props) {
   if (!path) return null
   return (
     <img
-      src={recipePhotoUrl(supabase, path)}
+      src={recipePhotoUrl(path)}
       alt={alt}
       loading="lazy"
       decoding="async"
-      className={className}
-      style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 8 }}
+      className="w-full rounded-lg object-cover"
+      style={{ aspectRatio: '4 / 3' }}
     />
   )
 }

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import { removeRecipePhoto } from './lib/photos'
 import type { Recipe, RecipeInput } from './types'
 import AuthPanel from './components/AuthPanel'
 import RecipeForm from './components/RecipeForm'
+import RecipePhoto from './components/RecipePhoto'
 import ReportButton from './components/ReportButton'
 import AdminPanel from './components/AdminPanel'
 
@@ -60,7 +62,7 @@ export default function App() {
     const { data, error } = await supabase
       .from('recipes')
       .select(
-        'id,user_id,title,ingredients,steps,created_at,profiles!recipes_user_id_fkey(username,avatar_url)',
+        'id,user_id,title,ingredients,steps,photo_path,created_at,profiles!recipes_user_id_fkey(username,avatar_url)',
       )
       .order('created_at', { ascending: false })
     if (error) {
@@ -79,28 +81,42 @@ export default function App() {
   const toggleTheme = () =>
     setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
 
-  const createRecipe = async (input: RecipeInput) => {
+  const createRecipe = async (input: RecipeInput): Promise<boolean> => {
     const { error } = await supabase.from('recipes').insert(input)
-    if (error) setError(error.message)
-    else await loadRecipes()
+    if (error) {
+      setError(error.message)
+      return false
+    }
+    await loadRecipes()
+    return true
   }
 
-  const updateRecipe = async (id: string, input: RecipeInput) => {
+  const updateRecipe = async (
+    id: string,
+    input: RecipeInput,
+  ): Promise<boolean> => {
+    const oldPhoto = recipes.find((r) => r.id === id)?.photo_path ?? null
     const { error } = await supabase.from('recipes').update(input).eq('id', id)
     if (error) {
       setError(error.message)
-    } else {
-      setEditingId(null)
-      await loadRecipes()
+      return false
     }
+    if (oldPhoto && oldPhoto !== input.photo_path) {
+      void removeRecipePhoto(oldPhoto).catch(() => undefined)
+    }
+    setEditingId(null)
+    await loadRecipes()
+    return true
   }
 
   const removeRecipe = async (id: string) => {
     if (!window.confirm('Apagar esta receita?')) return
+    const photo = recipes.find((r) => r.id === id)?.photo_path ?? null
     const { error } = await supabase.from('recipes').delete().eq('id', id)
     if (error) {
       setError(error.message)
     } else {
+      if (photo) void removeRecipePhoto(photo).catch(() => undefined)
       setAdminVersion((v) => v + 1)
       await loadRecipes()
     }
@@ -145,7 +161,11 @@ export default function App() {
         {session && (
           <section className="mb-8 rounded-2xl bg-white p-5 shadow-md dark:bg-stone-800">
             <h2 className="mb-3 text-lg font-semibold">Nova receita</h2>
-            <RecipeForm submitLabel="Adicionar receita" onSubmit={createRecipe} />
+            <RecipeForm
+              userId={session.user.id}
+              submitLabel="Adicionar receita"
+              onSubmit={createRecipe}
+            />
           </section>
         )}
 
@@ -184,6 +204,7 @@ export default function App() {
               >
                 {editingId === r.id ? (
                   <RecipeForm
+                    userId={userId ?? ''}
                     initial={r}
                     submitLabel="Guardar"
                     onSubmit={(input) => updateRecipe(r.id, input)}
@@ -204,6 +225,7 @@ export default function App() {
                       )}
                       <span>por {r.profiles?.username ?? 'desconhecido'}</span>
                     </p>
+                    <RecipePhoto path={r.photo_path} alt={r.title} />
                     {r.ingredients.length > 0 && (
                       <ul className="list-inside list-disc text-stone-700 dark:text-stone-300">
                         {r.ingredients.map((i, idx) => (

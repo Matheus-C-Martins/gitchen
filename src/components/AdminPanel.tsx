@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { removeRecipePhoto } from '../lib/photos'
 
 interface ReportRow {
   id: string
   reason: string
   created_at: string
   reporter: { username: string } | null
-  recipes: { id: string; title: string; user_id: string } | null
+  recipes: {
+    id: string
+    title: string
+    user_id: string
+    photo_path: string | null
+  } | null
 }
 
 interface Props {
@@ -28,7 +34,7 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
     const { data, error } = await supabase
       .from('reports')
       .select(
-        'id,reason,created_at,reporter:profiles!reports_reporter_id_fkey(username),recipes!reports_recipe_id_fkey(id,title,user_id)',
+        'id,reason,created_at,reporter:profiles!reports_reporter_id_fkey(username),recipes!reports_recipe_id_fkey(id,title,user_id,photo_path)',
       )
       .order('created_at', { ascending: false })
     if (error) {
@@ -50,12 +56,13 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
     else await load()
   }
 
-  const deleteRecipe = async (recipeId: string) => {
+  const deleteRecipe = async (recipeId: string, photoPath: string | null) => {
     if (!window.confirm('Apagar esta receita e as respetivas denúncias?')) return
     const { error } = await supabase.from('recipes').delete().eq('id', recipeId)
     if (error) {
       setError(error.message)
     } else {
+      if (photoPath) void removeRecipePhoto(photoPath).catch(() => undefined)
       await load()
       await onRecipeDeleted()
     }
@@ -106,7 +113,9 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
               {r.recipes && (
                 <button
                   type="button"
-                  onClick={() => void deleteRecipe(r.recipes!.id)}
+                  onClick={() =>
+                    void deleteRecipe(r.recipes!.id, r.recipes!.photo_path)
+                  }
                   className={dangerBtn}
                 >
                   Apagar receita
