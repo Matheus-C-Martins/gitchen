@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { removeRecipePhoto } from './lib/photos'
+import { PAGE_SIZE, fetchRecipesPage } from './lib/recipes'
+import { useHashRoute } from './lib/route'
 import type { Recipe, RecipeInput } from './types'
 import AuthPanel from './components/AuthPanel'
 import RecipeForm from './components/RecipeForm'
-import RecipePhoto from './components/RecipePhoto'
-import ReportButton from './components/ReportButton'
+import RecipeView from './components/RecipeView'
+import RecipePage from './components/RecipePage'
+import Pagination from './components/Pagination'
 import AdminPanel from './components/AdminPanel'
 
 const THEME_KEY = 'gitchen:theme'
@@ -29,12 +32,19 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminVersion, setAdminVersion] = useState(0)
   const [recipes, setRecipes] = useState<Recipe[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
+  const [reloadKey, setReloadKey] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
+  const requestRef = useRef(0)
 
+  const route = useHashRoute()
+  const routeId = route.name === 'recipe' ? route.id : null
   const userId = session?.user.id
 
   useEffect(() => {
@@ -58,28 +68,50 @@ export default function App() {
     void supabase.rpc('is_admin').then(({ data }) => setIsAdmin(data === true))
   }, [userId])
 
-  const loadRecipes = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('recipes')
-      .select(
-        'id,user_id,title,ingredients,steps,photo_path,created_at,profiles!recipes_user_id_fkey(username,avatar_url)',
-      )
-      .order('created_at', { ascending: false })
-    if (error) {
-      setError(error.message)
-    } else {
-      setError(null)
-      setRecipes(data ?? [])
-    }
-    setLoading(false)
-  }, [])
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query), 300)
+    return () => window.clearTimeout(timer)
+  }, [query])
 
   useEffect(() => {
-    void loadRecipes()
-  }, [loadRecipes])
+    window.scrollTo(0, 0)
+  }, [routeId])
+
+  useEffect(() => {
+    const request = ++requestRef.current
+    void fetchRecipesPage(page, debouncedQuery).then((res) => {
+      if (request !== requestRef.current) return
+      if (res.error) {
+        setError(res.error)
+        setLoading(false)
+        return
+      }
+      const lastPage = Math.max(0, Math.ceil(res.total / PAGE_SIZE) - 1)
+      if (page > lastPage) {
+        setPage(lastPage)
+        return
+      }
+      setError(null)
+      setRecipes(res.recipes)
+      setTotal(res.total)
+      setLoading(false)
+    })
+  }, [page, debouncedQuery, reloadKey])
+
+  const refresh = useCallback(() => setReloadKey((k) => k + 1), [])
 
   const toggleTheme = () =>
     setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
+
+  const changeQuery = (value: string) => {
+    setQuery(value)
+    setPage(0)
+  }
+
+  const changePage = (next: number) => {
+    setPage(next)
+    window.scrollTo({ top: 0 })
+  }
 
   const createRecipe = async (input: RecipeInput): Promise<boolean> => {
     const { error } = await supabase.from('recipes').insert(input)
@@ -87,47 +119,46 @@ export default function App() {
       setError(error.message)
       return false
     }
-    await loadRecipes()
+    setPage(0)
+    refresh()
     return true
   }
 
   const updateRecipe = async (
-    id: string,
+    recipe: Recipe,
     input: RecipeInput,
   ): Promise<boolean> => {
-    const oldPhoto = recipes.find((r) => r.id === id)?.photo_path ?? null
-    const { error } = await supabase.from('recipes').update(input).eq('id', id)
+    const { error } = await supabase
+      .from('recipes')
+      .update(input)
+      .eq('id', recipe.id)
     if (error) {
       setError(error.message)
       return false
     }
-    if (oldPhoto && oldPhoto !== input.photo_path) {
-      void removeRecipePhoto(oldPhoto).catch(() => undefined)
+    if (recipe.photo_path && recipe.photo_path !== input.photo_path) {
+      void removeRecipePhoto(recipe.photo_path).catch(() => undefined)
     }
-    setEditingId(null)
-    await loadRecipes()
+    refresh()
     return true
   }
 
-  const removeRecipe = async (id: string) => {
-    if (!window.confirm('Apagar esta receita?')) return
-    const photo = recipes.find((r) => r.id === id)?.photo_path ?? null
-    const { error } = await supabase.from('recipes').delete().eq('id', id)
+  const removeRecipe = async (recipe: Recipe): Promise<boolean> => {
+    if (!window.confirm('Apagar esta receita?')) return false
+    const { error } = await supabase.from('recipes').delete().eq('id', recipe.id)
     if (error) {
       setError(error.message)
-    } else {
-      if (photo) void removeRecipePhoto(photo).catch(() => undefined)
-      setAdminVersion((v) => v + 1)
-      await loadRecipes()
+      return false
     }
+    if (recipe.photo_path) {
+      void removeRecipePhoto(recipe.photo_path).catch(() => undefined)
+    }
+    setAdminVersion((v) => v + 1)
+    refresh()
+    return true
   }
 
-  const q = query.toLowerCase()
-  const visible = recipes.filter(
-    (r) =>
-      r.title.toLowerCase().includes(q) ||
-      r.ingredients.some((i) => i.toLowerCase().includes(q)),
-  )
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
     <div className="min-h-screen bg-amber-50 font-sans text-stone-800 transition-colors dark:bg-stone-900 dark:text-stone-100">
@@ -145,7 +176,7 @@ export default function App() {
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <h1 className="text-4xl font-bold tracking-tight text-orange-600 dark:text-orange-400">
-            🍳 Gitchen
+            <a href="#/">🍳 Gitchen</a>
           </h1>
           <p className="mt-1 text-stone-500 dark:text-stone-400">
             O livro de receitas de todos
@@ -155,18 +186,10 @@ export default function App() {
         <AuthPanel session={session} />
 
         {isAdmin && (
-          <AdminPanel version={adminVersion} onRecipeDeleted={loadRecipes} />
-        )}
-
-        {session && (
-          <section className="mb-8 rounded-2xl bg-white p-5 shadow-md dark:bg-stone-800">
-            <h2 className="mb-3 text-lg font-semibold">Nova receita</h2>
-            <RecipeForm
-              userId={session.user.id}
-              submitLabel="Adicionar receita"
-              onSubmit={createRecipe}
-            />
-          </section>
+          <AdminPanel
+            version={adminVersion}
+            onRecipeDeleted={async () => refresh()}
+          />
         )}
 
         {error && (
@@ -175,96 +198,92 @@ export default function App() {
           </p>
         )}
 
-        <input
-          className={`${inputClass} mb-6`}
-          placeholder="Pesquisar por título ou ingrediente"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        {routeId ? (
+          <RecipePage
+            key={routeId}
+            id={routeId}
+            userId={userId}
+            isAdmin={isAdmin}
+            version={reloadKey}
+            onUpdate={updateRecipe}
+            onRemove={removeRecipe}
+          />
+        ) : (
+          <>
+            {session && (
+              <section className="mb-8 rounded-2xl bg-white p-5 shadow-md dark:bg-stone-800">
+                <h2 className="mb-3 text-lg font-semibold">Nova receita</h2>
+                <RecipeForm
+                  userId={session.user.id}
+                  submitLabel="Adicionar receita"
+                  onSubmit={createRecipe}
+                />
+              </section>
+            )}
 
-        {loading && (
-          <p className="py-8 text-center text-stone-500 dark:text-stone-400">
-            A carregar receitas…
-          </p>
+            <input
+              className={`${inputClass} mb-2`}
+              placeholder="Pesquisar por título ou ingrediente"
+              value={query}
+              onChange={(e) => changeQuery(e.target.value)}
+            />
+            {!loading && (
+              <p className="mb-6 text-sm text-stone-500 dark:text-stone-400">
+                {total === 1 ? '1 receita' : `${total} receitas`}
+              </p>
+            )}
+
+            {loading && (
+              <p className="py-8 text-center text-stone-500 dark:text-stone-400">
+                A carregar receitas…
+              </p>
+            )}
+
+            {!loading && recipes.length === 0 && (
+              <p className="py-8 text-center text-stone-500 dark:text-stone-400">
+                Sem receitas para mostrar.
+              </p>
+            )}
+
+            <div className="grid gap-4">
+              {recipes.map((r) => (
+                <article
+                  key={r.id}
+                  className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-md transition hover:shadow-lg dark:bg-stone-800"
+                >
+                  {editingId === r.id ? (
+                    <RecipeForm
+                      userId={userId ?? ''}
+                      initial={r}
+                      submitLabel="Guardar"
+                      onSubmit={async (input) => {
+                        const ok = await updateRecipe(r, input)
+                        if (ok) setEditingId(null)
+                        return ok
+                      }}
+                      onCancel={() => setEditingId(null)}
+                    />
+                  ) : (
+                    <RecipeView
+                      recipe={r}
+                      userId={userId}
+                      isAdmin={isAdmin}
+                      asLink
+                      onEdit={() => setEditingId(r.id)}
+                      onDelete={() => void removeRecipe(r)}
+                    />
+                  )}
+                </article>
+              ))}
+            </div>
+
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onChange={changePage}
+            />
+          </>
         )}
-
-        {!loading && visible.length === 0 && (
-          <p className="py-8 text-center text-stone-500 dark:text-stone-400">
-            Sem receitas para mostrar.
-          </p>
-        )}
-
-        <div className="grid gap-4">
-          {visible.map((r) => {
-            const isOwner = userId === r.user_id
-            return (
-              <article
-                key={r.id}
-                className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-md transition hover:shadow-lg dark:bg-stone-800"
-              >
-                {editingId === r.id ? (
-                  <RecipeForm
-                    userId={userId ?? ''}
-                    initial={r}
-                    submitLabel="Guardar"
-                    onSubmit={(input) => updateRecipe(r.id, input)}
-                    onCancel={() => setEditingId(null)}
-                  />
-                ) : (
-                  <>
-                    <h2 className="text-xl font-semibold text-stone-900 dark:text-stone-50">
-                      {r.title}
-                    </h2>
-                    <p className="flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
-                      {r.profiles?.avatar_url && (
-                        <img
-                          src={r.profiles.avatar_url}
-                          alt=""
-                          className="h-5 w-5 rounded-full"
-                        />
-                      )}
-                      <span>por {r.profiles?.username ?? 'desconhecido'}</span>
-                    </p>
-                    <RecipePhoto path={r.photo_path} alt={r.title} />
-                    {r.ingredients.length > 0 && (
-                      <ul className="list-inside list-disc text-stone-700 dark:text-stone-300">
-                        {r.ingredients.map((i, idx) => (
-                          <li key={idx}>{i}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {r.steps && (
-                      <p className="whitespace-pre-wrap text-stone-600 dark:text-stone-400">
-                        {r.steps}
-                      </p>
-                    )}
-                    {session && (
-                      <div className="flex flex-wrap items-start gap-2">
-                        {isOwner && (
-                          <button
-                            onClick={() => setEditingId(r.id)}
-                            className="rounded-lg border border-stone-300 px-3 py-1 text-sm text-stone-600 transition hover:bg-stone-100 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-700"
-                          >
-                            Editar
-                          </button>
-                        )}
-                        {(isOwner || isAdmin) && (
-                          <button
-                            onClick={() => void removeRecipe(r.id)}
-                            className="rounded-lg border border-stone-300 px-3 py-1 text-sm text-stone-600 transition hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-stone-600 dark:text-stone-300 dark:hover:border-red-500 dark:hover:bg-red-950 dark:hover:text-red-400"
-                          >
-                            {isOwner ? 'Apagar' : 'Apagar (admin)'}
-                          </button>
-                        )}
-                        {!isOwner && <ReportButton recipeId={r.id} />}
-                      </div>
-                    )}
-                  </>
-                )}
-              </article>
-            )
-          })}
-        </div>
       </main>
     </div>
   )
