@@ -1,20 +1,37 @@
+import { ChefHat } from 'lucide-react'
 import { recipePhotoUrl } from '../lib/photos'
 
 interface Props {
   path: string | null | undefined
   alt: string
+  className?: string
+  fallback?: boolean
 }
 
-export default function RecipePhoto({ path, alt }: Props) {
-  if (!path) return null
+export default function RecipePhoto({
+  path,
+  alt,
+  className = '',
+  fallback = false,
+}: Props) {
+  if (!path) {
+    if (!fallback) return null
+    return (
+      <div
+        aria-hidden
+        className={`flex items-center justify-center bg-accent-soft text-accent/50 ${className}`}
+      >
+        <ChefHat className="size-12" />
+      </div>
+    )
+  }
   return (
     <img
       src={recipePhotoUrl(path)}
       alt={alt}
       loading="lazy"
       decoding="async"
-      className="w-full rounded-lg object-cover"
-      style={{ aspectRatio: '4 / 3' }}
+      className={`object-cover ${className}`}
     />
   )
 }

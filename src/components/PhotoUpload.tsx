@@ -1,5 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react'
+import { ImagePlus, LoaderCircle, Trash2 } from 'lucide-react'
 import { removeRecipePhoto, uploadRecipePhoto } from '../lib/photos'
+import { btn } from '../lib/ui'
 import RecipePhoto from './RecipePhoto'
 
 interface Props {
@@ -9,13 +11,11 @@ interface Props {
   disabled?: boolean
 }
 
-const btn =
-  'rounded-lg border border-stone-300 px-3 py-1 text-sm text-stone-600 transition hover:bg-stone-100 disabled:opacity-50 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-700'
-
 export default function PhotoUpload({ userId, value, onChange, disabled }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const uploadedHere = useRef<string | null>(null)
+  const blocked = Boolean(disabled) || busy
 
   const discardPending = async () => {
     const pending = uploadedHere.current
@@ -54,35 +54,49 @@ export default function PhotoUpload({ userId, value, onChange, disabled }: Props
 
   return (
     <div className="flex flex-col gap-2">
-      <RecipePhoto path={value} alt="Fotografia da receita" />
+      <span className="text-sm font-medium">Fotografia</span>
+      <RecipePhoto
+        path={value}
+        alt="Fotografia da receita"
+        className="aspect-[4/3] w-full rounded-xl"
+      />
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={(e) => void handleFile(e)}
-          disabled={disabled || busy}
-          className="text-sm text-stone-600 dark:text-stone-300"
-        />
+        <label
+          aria-disabled={blocked}
+          className={`${btn} cursor-pointer focus-within:outline-2 focus-within:outline-accent ${
+            blocked ? 'pointer-events-none opacity-50' : ''
+          }`}
+        >
+          {busy ? (
+            <LoaderCircle className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <ImagePlus className="size-4" aria-hidden />
+          )}
+          {busy ? 'A enviar…' : value ? 'Trocar fotografia' : 'Adicionar fotografia'}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => void handleFile(e)}
+            disabled={blocked}
+            className="sr-only"
+          />
+        </label>
         {value && (
           <button
             type="button"
             onClick={() => void handleRemove()}
-            disabled={disabled || busy}
+            disabled={blocked}
             className={btn}
           >
+            <Trash2 className="size-4" aria-hidden />
             Remover foto
           </button>
-        )}
-        {busy && (
-          <span className="text-sm text-stone-500 dark:text-stone-400">
-            A enviar…
-          </span>
         )}
       </div>
       {error && (
         <p
           role="alert"
-          className="rounded-lg bg-red-100 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+          className="rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger"
         >
           {error}
         </p>
