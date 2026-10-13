@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { iconBtn } from '../lib/ui'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function Modal({ open, title, onClose, children }: Props) {
+  const { t } = useTranslation()
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
 
@@ -48,8 +50,8 @@ export default function Modal({ open, title, onClose, children }: Props) {
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close"
-              title="Close"
+              aria-label={t('modal.close')}
+              title={t('modal.close')}
               className={iconBtn}
             >
               <X className="size-5" aria-hidden />

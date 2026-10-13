@@ -1,3 +1,4 @@
+import i18n from '../i18n'
 import { supabase } from './supabase'
 
 export const PHOTO_BUCKET = 'recipe-photos'
@@ -15,10 +16,10 @@ function canvasToBlob(
 
 export async function shrinkImage(file: File): Promise<Blob> {
   if (!PHOTO_ALLOWED_TYPES.includes(file.type)) {
-    throw new Error('Unsupported format. Use JPEG, PNG or WebP.')
+    throw new Error(i18n.t('photo.unsupportedFormat'))
   }
   if (file.size > PHOTO_MAX_INPUT_BYTES) {
-    throw new Error('The image is too large (maximum 15 MB).')
+    throw new Error(i18n.t('photo.tooLarge'))
   }
   const bitmap = await createImageBitmap(file)
   const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(bitmap.width, bitmap.height))
@@ -26,7 +27,7 @@ export async function shrinkImage(file: File): Promise<Blob> {
   canvas.width = Math.round(bitmap.width * scale)
   canvas.height = Math.round(bitmap.height * scale)
   const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('Could not process the image.')
+  if (!ctx) throw new Error(i18n.t('photo.processFailed'))
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   bitmap.close()
 
@@ -34,9 +35,9 @@ export async function shrinkImage(file: File): Promise<Blob> {
   if (!blob || blob.type !== 'image/webp') {
     blob = await canvasToBlob(canvas, 'image/jpeg', 0.85)
   }
-  if (!blob) throw new Error('Could not process the image.')
+  if (!blob) throw new Error(i18n.t('photo.processFailed'))
   if (blob.size > 2 * 1024 * 1024) {
-    throw new Error('The image is still over 2 MB after resizing.')
+    throw new Error(i18n.t('photo.stillTooLarge'))
   }
   return blob
 }
