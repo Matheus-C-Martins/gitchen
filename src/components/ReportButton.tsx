@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Check, Flag, LoaderCircle, Send } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { btn, btnPrimary, inputClass } from '../lib/ui'
 
 export default function ReportButton({ recipeId }: { recipeId: string }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [sending, setSending] = useState(false)
@@ -20,9 +22,7 @@ export default function ReportButton({ recipeId }: { recipeId: string }) {
     setSending(false)
     if (error) {
       setError(
-        error.code === '23505'
-          ? 'You have already reported this recipe.'
-          : error.message,
+        error.code === '23505' ? t('report.alreadyReported') : error.message,
       )
     } else {
       setSent(true)
@@ -34,7 +34,7 @@ export default function ReportButton({ recipeId }: { recipeId: string }) {
     return (
       <span className="inline-flex items-center gap-2 text-sm text-muted">
         <Check className="size-4 text-accent" aria-hidden />
-        Report sent. Thank you.
+        {t('report.sent')}
       </span>
     )
   }
@@ -44,7 +44,7 @@ export default function ReportButton({ recipeId }: { recipeId: string }) {
       <div className="flex items-center gap-2">
         <button type="button" onClick={() => setOpen(true)} className={btn}>
           <Flag className="size-4" aria-hidden />
-          Report
+          {t('report.report')}
         </button>
         {error && <span className="text-sm text-danger">{error}</span>}
       </div>
@@ -61,8 +61,8 @@ export default function ReportButton({ recipeId }: { recipeId: string }) {
         maxLength={500}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        placeholder="Reason (optional, up to 500 characters)"
-        aria-label="Reason for the report"
+        placeholder={t('report.reasonPlaceholder')}
+        aria-label={t('report.reasonLabel')}
         className={inputClass}
       />
       <div className="flex flex-wrap gap-2">
@@ -72,10 +72,10 @@ export default function ReportButton({ recipeId }: { recipeId: string }) {
           ) : (
             <Send className="size-4" aria-hidden />
           )}
-          Send report
+          {t('report.send')}
         </button>
         <button type="button" onClick={() => setOpen(false)} className={btn}>
-          Cancel
+          {t('report.cancel')}
         </button>
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}

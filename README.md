@@ -13,6 +13,13 @@ App: https://matheus-c-martins.github.io/gitchen/
 - Admins review the reports and can delete any recipe.
 - Each recipe shows the name and avatar of the person who created it.
 
+## Languages and translation
+
+- The interface is available in English and Portuguese, using [react-i18next](https://react.i18next.com/). The first language is picked from the browser (Portuguese if the browser is in Portuguese, English otherwise). The EN/PT button in the header switches it, and the choice is saved in `localStorage`.
+- The texts live in `src/locales/en.ts` and `src/locales/pt.ts`. The Portuguese file is typed against the English one, so the build fails if a key is missing.
+- Recipes are written by users in whatever language they like. On a recipe page, the Translate button translates the title, ingredients and method into the interface language, using the browser's built-in Translator API (Chrome on desktop). The translation runs on the device: nothing is sent to a server or saved. The first time, the browser may download a language pack. A button switches back to the original text.
+- If the browser has no Translator API, the button is hidden. Recipe cards in the list and tags are not translated.
+
 ## Moderation
 
 - Any signed-in user can report a recipe from its page, with an optional reason of up to 500 characters. The report button is not shown on your own recipes, and each user can report a given recipe only once.

@@ -1,3 +1,4 @@
+import i18n from '../i18n'
 import { supabase } from './supabase'
 
 export async function fetchFavoriteIds(ids: string[]): Promise<Set<string>> {
@@ -19,7 +20,7 @@ export async function setFavorite(
       .from('favorites')
       .insert({ recipe_id: recipeId })
     if (!error || error.code === '23505') return null
-    if (error.code === '42501') return 'You have reached the limit of 500 favourites.'
+    if (error.code === '42501') return i18n.t('favorites.limit')
     return error.message
   }
   const { error } = await supabase

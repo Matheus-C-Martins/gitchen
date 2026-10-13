@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { useTranslation } from 'react-i18next'
 import {
   BookOpen,
   ChefHat,
@@ -35,6 +36,7 @@ import {
 import type { Recipe, RecipeInput } from './types'
 import AdminPanel from './components/AdminPanel'
 import AuthPanel from './components/AuthPanel'
+import LanguageSwitcher from './components/LanguageSwitcher'
 import Modal from './components/Modal'
 import Pagination from './components/Pagination'
 import RecipeCard from './components/RecipeCard'
@@ -54,6 +56,7 @@ function getInitialTheme(): Theme {
 }
 
 export default function App() {
+  const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminVersion, setAdminVersion] = useState(0)
@@ -78,7 +81,7 @@ export default function App() {
   const routeId = route.name === 'recipe' ? route.id : null
   const userId = session?.user.id
   const onlyFavorites = favoritesOnly && userId !== undefined
-  const suggestions = tagCounts.map((t) => t.name)
+  const suggestions = tagCounts.map((c) => c.name)
   const error = actionError ?? listError
 
   useEffect(() => {
@@ -153,7 +156,7 @@ export default function App() {
   const refresh = useCallback(() => setReloadKey((k) => k + 1), [])
 
   const toggleTheme = () =>
-    setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
 
   const changeQuery = (value: string) => {
     setQuery(value)
@@ -225,9 +228,7 @@ export default function App() {
     if (tags.length > 0) {
       const tagError = await saveRecipeTags(data.id, tags)
       if (tagError) {
-        setActionError(
-          `Recipe created, but the tags could not be saved: ${tagError}`,
-        )
+        setActionError(t('app.createdTagsFailed', { error: tagError }))
       }
     }
     setPage(0)
@@ -255,9 +256,7 @@ export default function App() {
     if (!sameTags(recipe.tag_names, tags)) {
       const tagError = await saveRecipeTags(recipe.id, tags)
       if (tagError) {
-        setActionError(
-          `Recipe saved, but the tags could not be updated: ${tagError}`,
-        )
+        setActionError(t('app.savedTagsFailed', { error: tagError }))
       }
     }
     refresh()
@@ -265,7 +264,7 @@ export default function App() {
   }
 
   const removeRecipe = async (recipe: Recipe): Promise<boolean> => {
-    if (!window.confirm('Delete this recipe?')) return false
+    if (!window.confirm(t('app.confirmDelete'))) return false
     setActionError(null)
     const { error } = await supabase.from('recipes').delete().eq('id', recipe.id)
     if (error) {
@@ -282,7 +281,7 @@ export default function App() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const chips: TagCount[] =
-    tag && !tagCounts.some((t) => t.name === tag)
+    tag && !tagCounts.some((c) => c.name === tag)
       ? [{ name: tag, count: 0 }, ...tagCounts]
       : tagCounts
 
@@ -299,15 +298,14 @@ export default function App() {
           </a>
           <div className="flex items-center gap-2">
             <AuthPanel session={session} />
+            <LanguageSwitcher />
             <button
               type="button"
               onClick={toggleTheme}
               aria-label={
-                theme === 'dark'
-                  ? 'Switch to light theme'
-                  : 'Switch to dark theme'
+                theme === 'dark' ? t('app.themeToLight') : t('app.themeToDark')
               }
-              title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
+              title={theme === 'dark' ? t('app.themeLight') : t('app.themeDark')}
               className={iconBtn}
             >
               {theme === 'dark' ? (
@@ -359,7 +357,7 @@ export default function App() {
           <>
             <section className="cover mt-6 rounded-3xl px-5 py-10 text-center sm:mt-10 sm:px-10 sm:py-14">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-                Everyone's recipe book
+                {t('app.tagline')}
               </p>
               <h1 className="mt-3 font-serif text-5xl font-semibold tracking-tight sm:text-7xl">
                 Gitchen
@@ -368,8 +366,7 @@ export default function App() {
                 <ChefHat className="size-5" />
               </div>
               <p className="mx-auto mt-4 max-w-md text-balance text-muted">
-                Recipes shared by people who cook. Read them, save your
-                favourites and add your own.
+                {t('app.intro')}
               </p>
 
               <div className="relative mx-auto mt-7 max-w-lg">
@@ -379,8 +376,8 @@ export default function App() {
                 />
                 <input
                   type="search"
-                  aria-label="Search recipes"
-                  placeholder="Search by title or ingredient"
+                  aria-label={t('app.searchLabel')}
+                  placeholder={t('app.searchPlaceholder')}
                   value={query}
                   onChange={(e) => changeQuery(e.target.value)}
                   className={searchClass}
@@ -388,8 +385,8 @@ export default function App() {
                 {query && (
                   <button
                     type="button"
-                    aria-label="Clear search"
-                    title="Clear search"
+                    aria-label={t('app.clearSearch')}
+                    title={t('app.clearSearch')}
                     onClick={() => changeQuery('')}
                     className="absolute right-1.5 top-1/2 inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full text-muted transition hover:bg-accent-soft hover:text-ink"
                   >
@@ -406,25 +403,23 @@ export default function App() {
                     className={btnPrimary}
                   >
                     <Plus className="size-4" aria-hidden />
-                    New recipe
+                    {t('app.newRecipe')}
                   </button>
                 ) : (
-                  <p className="text-sm text-muted">
-                    Sign in with GitHub to add and manage your recipes.
-                  </p>
+                  <p className="text-sm text-muted">{t('app.signInPrompt')}</p>
                 )}
               </div>
             </section>
 
             {(session || chips.length > 0) && (
-              <section aria-label="Index" className="mt-8">
+              <section aria-label={t('app.index')} className="mt-8">
                 <h2 className="mb-3 flex items-center gap-2 font-serif text-xl font-semibold">
                   <BookOpen className="size-5 text-accent" aria-hidden />
-                  Index
+                  {t('app.index')}
                 </h2>
                 <div
                   role="group"
-                  aria-label="Filters"
+                  aria-label={t('app.filters')}
                   className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
                 >
                   {session && (
@@ -439,7 +434,7 @@ export default function App() {
                         fill={onlyFavorites ? 'currentColor' : 'none'}
                         aria-hidden
                       />
-                      Favourites
+                      {t('app.favourites')}
                     </button>
                   )}
                   {chips.length > 0 && (
@@ -448,17 +443,17 @@ export default function App() {
                       onClick={() => selectTag(null)}
                       className={`${chipBase} ${tag === null ? chipOn : chipOff}`}
                     >
-                      All
+                      {t('app.all')}
                     </button>
                   )}
-                  {chips.map((t) => (
+                  {chips.map((c) => (
                     <button
-                      key={t.name}
+                      key={c.name}
                       type="button"
-                      onClick={() => selectTag(tag === t.name ? null : t.name)}
-                      className={`${chipBase} ${tag === t.name ? chipOn : chipOff}`}
+                      onClick={() => selectTag(tag === c.name ? null : c.name)}
+                      className={`${chipBase} ${tag === c.name ? chipOn : chipOff}`}
                     >
-                      #{t.name}
+                      #{c.name}
                     </button>
                   ))}
                 </div>
@@ -466,10 +461,12 @@ export default function App() {
             )}
 
             <div className="mb-5 mt-8 flex items-baseline justify-between gap-3">
-              <h2 className="font-serif text-2xl font-semibold">Recipes</h2>
+              <h2 className="font-serif text-2xl font-semibold">
+                {t('app.recipes')}
+              </h2>
               {!loading && (
                 <p className="text-sm text-muted">
-                  {total === 1 ? '1 recipe' : `${total} recipes`}
+                  {t('app.recipeCount', { count: total })}
                 </p>
               )}
             </div>
@@ -493,8 +490,8 @@ export default function App() {
                 <ChefHat className="size-12 text-accent/50" aria-hidden />
                 <p>
                   {onlyFavorites && !tag && !debouncedQuery
-                    ? 'You have no favourite recipes yet.'
-                    : 'No recipes to show.'}
+                    ? t('app.noFavourites')
+                    : t('app.noRecipes')}
                 </p>
               </div>
             )}
@@ -524,15 +521,15 @@ export default function App() {
       </main>
 
       <footer className="border-t border-line py-8 text-center text-sm text-muted">
-        Gitchen · Everyone's recipe book
+        {t('app.footer')}
       </footer>
 
       {session && !routeId && (
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          aria-label="New recipe"
-          title="New recipe"
+          aria-label={t('app.newRecipe')}
+          title={t('app.newRecipe')}
           className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 inline-flex size-14 items-center justify-center rounded-full bg-accent text-accent-ink shadow-xl transition active:scale-95 sm:hidden"
         >
           <Plus className="size-6" aria-hidden />
@@ -541,13 +538,13 @@ export default function App() {
 
       <Modal
         open={createOpen && session !== null}
-        title="New recipe"
+        title={t('app.newRecipe')}
         onClose={() => setCreateOpen(false)}
       >
         <RecipeForm
           userId={userId ?? ''}
           suggestions={suggestions}
-          submitLabel="Add recipe"
+          submitLabel={t('app.addRecipe')}
           onSubmit={async (input, tags) => {
             const ok = await createRecipe(input, tags)
             if (ok) setCreateOpen(false)

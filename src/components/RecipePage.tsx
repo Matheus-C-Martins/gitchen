@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Check, Link2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Recipe, RecipeInput } from '../types'
 import { fetchFavoriteIds } from '../lib/favorites'
 import { fetchRecipe } from '../lib/recipes'
@@ -36,6 +37,7 @@ export default function RecipePage({
   onUpdate,
   onRemove,
 }: Props) {
+  const { t } = useTranslation()
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [favorite, setFavorite] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -74,7 +76,7 @@ export default function RecipePage({
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      setError('Could not copy the link.')
+      setError(t('page.copyFailed'))
     }
   }
 
@@ -110,7 +112,7 @@ export default function RecipePage({
       <div className="flex items-center justify-between gap-3">
         <a href="#/" className={btn}>
           <ArrowLeft className="size-4" aria-hidden />
-          All recipes
+          {t('page.allRecipes')}
         </a>
         {recipe && (
           <button type="button" onClick={() => void copyLink()} className={btn}>
@@ -119,7 +121,7 @@ export default function RecipePage({
             ) : (
               <Link2 className="size-4" aria-hidden />
             )}
-            {copied ? 'Link copied' : 'Copy link'}
+            {copied ? t('page.linkCopied') : t('page.copyLink')}
           </button>
         )}
       </div>
@@ -138,9 +140,7 @@ export default function RecipePage({
       )}
 
       {!loading && !error && !recipe && (
-        <p className="py-12 text-center text-muted">
-          Recipe not found. It may have been deleted.
-        </p>
+        <p className="py-12 text-center text-muted">{t('page.notFound')}</p>
       )}
 
       {recipe && (
@@ -158,7 +158,7 @@ export default function RecipePage({
 
       <Modal
         open={editing && recipe !== null}
-        title="Edit recipe"
+        title={t('page.editRecipe')}
         onClose={() => setEditing(false)}
       >
         {recipe && (
@@ -166,7 +166,7 @@ export default function RecipePage({
             userId={userId ?? ''}
             initial={recipe}
             suggestions={suggestions}
-            submitLabel="Save"
+            submitLabel={t('page.save')}
             onSubmit={(input, tags) => handleUpdate(recipe, input, tags)}
             onCancel={() => setEditing(false)}
           />

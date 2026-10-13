@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Check, ShieldCheck, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { dateLocale } from '../i18n'
 import { supabase } from '../lib/supabase'
 import { removeRecipePhoto } from '../lib/photos'
 import { recipeHref } from '../lib/route'
@@ -24,6 +26,7 @@ interface Props {
 }
 
 export default function AdminPanel({ version, onRecipeDeleted }: Props) {
+  const { t } = useTranslation()
   const [reports, setReports] = useState<ReportRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -55,7 +58,7 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
   }
 
   const deleteRecipe = async (recipeId: string, photoPath: string | null) => {
-    if (!window.confirm('Delete this recipe and its reports?')) return
+    if (!window.confirm(t('admin.confirmDelete'))) return
     const { error } = await supabase.from('recipes').delete().eq('id', recipeId)
     if (error) {
       setError(error.message)
@@ -68,12 +71,12 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
 
   return (
     <section
-      aria-label="Moderation"
+      aria-label={t('admin.moderation')}
       className="rounded-2xl border border-accent/40 bg-card p-5 shadow-sm"
     >
       <h2 className="mb-3 flex items-center gap-2 font-serif text-xl font-semibold">
         <ShieldCheck className="size-5 text-accent" aria-hidden />
-        Moderation ({reports.length})
+        {t('admin.moderation')} ({reports.length})
       </h2>
 
       {error && (
@@ -82,10 +85,10 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
         </p>
       )}
 
-      {loading && <p className="text-sm text-muted">Loading…</p>}
+      {loading && <p className="text-sm text-muted">{t('admin.loading')}</p>}
 
       {!loading && reports.length === 0 && (
-        <p className="text-sm text-muted">No pending reports.</p>
+        <p className="text-sm text-muted">{t('admin.none')}</p>
       )}
 
       <ul className="flex flex-col gap-4">
@@ -103,13 +106,15 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
                   {r.recipes.title}
                 </a>
               ) : (
-                'Recipe removed'
+                t('admin.removed')
               )}
             </p>
-            <p className="text-sm">{r.reason || '(no reason given)'}</p>
+            <p className="text-sm">{r.reason || t('admin.noReason')}</p>
             <p className="text-xs text-muted">
-              Reported by {r.reporter?.username ?? 'unknown'} on{' '}
-              {new Date(r.created_at).toLocaleDateString('en-GB')}
+              {t('admin.reportedBy', {
+                name: r.reporter?.username ?? t('admin.unknown'),
+                date: new Date(r.created_at).toLocaleDateString(dateLocale()),
+              })}
             </p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -118,7 +123,7 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
                 className={btn}
               >
                 <Check className="size-4" aria-hidden />
-                Dismiss report
+                {t('admin.dismiss')}
               </button>
               {r.recipes && (
                 <button
@@ -129,7 +134,7 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
                   className={btnDanger}
                 >
                   <Trash2 className="size-4" aria-hidden />
-                  Delete recipe
+                  {t('admin.deleteRecipe')}
                 </button>
               )}
             </div>

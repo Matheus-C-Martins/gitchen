@@ -1,4 +1,5 @@
 import { Heart, ListChecks } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Recipe } from '../types'
 import { recipeHref } from '../lib/route'
 import { tagPill } from '../lib/ui'
@@ -19,7 +20,11 @@ export default function RecipeCard({
   onToggleFavorite,
   onTagClick,
 }: Props) {
+  const { t } = useTranslation()
   const count = r.ingredients.length
+  const favoriteLabel = favorite
+    ? t('card.removeFavourite')
+    : t('card.addFavourite')
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg">
       <div className="overflow-hidden">
@@ -35,10 +40,8 @@ export default function RecipeCard({
         <button
           type="button"
           aria-pressed={favorite}
-          aria-label={
-            favorite ? 'Remove from favourites' : 'Add to favourites'
-          }
-          title={favorite ? 'Remove from favourites' : 'Add to favourites'}
+          aria-label={favoriteLabel}
+          title={favoriteLabel}
           onClick={onToggleFavorite}
           className="absolute right-3 top-3 z-10 inline-flex size-11 items-center justify-center rounded-full bg-card/90 text-accent shadow backdrop-blur transition hover:scale-105 active:scale-95 sm:size-10"
         >
@@ -62,14 +65,14 @@ export default function RecipeCard({
 
         {r.tag_names.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {r.tag_names.slice(0, 3).map((t) => (
+            {r.tag_names.slice(0, 3).map((name) => (
               <button
-                key={t}
+                key={name}
                 type="button"
-                onClick={() => onTagClick(t)}
+                onClick={() => onTagClick(name)}
                 className={`${tagPill} relative z-10 transition hover:brightness-95`}
               >
-                #{t}
+                #{name}
               </button>
             ))}
           </div>
@@ -84,11 +87,13 @@ export default function RecipeCard({
                 className="size-5 shrink-0 rounded-full"
               />
             )}
-            <span className="truncate">{r.profiles?.username ?? 'unknown'}</span>
+            <span className="truncate">
+              {r.profiles?.username ?? t('card.unknown')}
+            </span>
           </span>
           <span
             className="inline-flex shrink-0 items-center gap-1"
-            title={`${count} ${count === 1 ? 'ingredient' : 'ingredients'}`}
+            title={t('card.ingredientCount', { count })}
           >
             <ListChecks className="size-4" aria-hidden />
             {count}

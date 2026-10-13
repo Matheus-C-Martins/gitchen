@@ -1,15 +1,18 @@
 import type { Session } from '@supabase/supabase-js'
 import { LogIn, LogOut, UserRound } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { btnPrimary, iconBtn } from '../lib/ui'
 
 export default function AuthPanel({ session }: { session: Session | null }) {
+  const { t } = useTranslation()
+
   if (session) {
     const meta = session.user.user_metadata as {
       user_name?: string
       avatar_url?: string
     }
-    const name = meta.user_name ?? session.user.email ?? 'user'
+    const name = meta.user_name ?? session.user.email ?? t('auth.user')
     return (
       <div className="flex items-center gap-1.5">
         {meta.avatar_url ? (
@@ -23,15 +26,15 @@ export default function AuthPanel({ session }: { session: Session | null }) {
         )}
         <span
           className="hidden max-w-36 truncate text-sm sm:inline"
-          title={`Signed in as ${name}`}
+          title={t('auth.signedInAs', { name })}
         >
           {name}
         </span>
         <button
           type="button"
           onClick={() => void supabase.auth.signOut()}
-          aria-label="Sign out"
-          title="Sign out"
+          aria-label={t('auth.signOut')}
+          title={t('auth.signOut')}
           className={iconBtn}
         >
           <LogOut className="size-5" aria-hidden />
@@ -49,7 +52,8 @@ export default function AuthPanel({ session }: { session: Session | null }) {
   return (
     <button type="button" onClick={signInWithGitHub} className={btnPrimary}>
       <LogIn className="size-4" aria-hidden />
-      Sign in<span className="hidden sm:inline"> with GitHub</span>
+      {t('auth.signIn')}
+      <span className="hidden sm:inline">{t('auth.signInWith')}</span>
     </button>
   )
 }

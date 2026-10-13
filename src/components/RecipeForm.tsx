@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { Check, LoaderCircle, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Recipe, RecipeInput } from '../types'
 import { removeRecipePhoto } from '../lib/photos'
 import { MAX_TAGS, MAX_TAG_LENGTH, normalizeTag } from '../lib/tags'
@@ -33,6 +34,7 @@ export default function RecipeForm({
   onSubmit,
   onCancel,
 }: Props) {
+  const { t } = useTranslation()
   const [title, setTitle] = useState(initial?.title ?? '')
   const [ingredients, setIngredients] = useState(
     initial?.ingredients.join('\n') ?? '',
@@ -66,7 +68,7 @@ export default function RecipeForm({
     const name = normalizeTag(tagDraft)
     if (!name) return tags
     if (name.length > MAX_TAG_LENGTH) {
-      setTagError(`A tag can have at most ${MAX_TAG_LENGTH} characters.`)
+      setTagError(t('form.tagTooLong', { max: MAX_TAG_LENGTH }))
       return null
     }
     if (tags.includes(name)) {
@@ -75,7 +77,7 @@ export default function RecipeForm({
       return tags
     }
     if (tags.length >= MAX_TAGS) {
-      setTagError(`Maximum of ${MAX_TAGS} tags.`)
+      setTagError(t('form.tagsMax', { max: MAX_TAGS }))
       return null
     }
     const next = [...tags, name]
@@ -131,10 +133,10 @@ export default function RecipeForm({
   return (
     <form onSubmit={(e) => void handle(e)} className="flex flex-col gap-5">
       <label className={field}>
-        <span className={fieldLabel}>Title</span>
+        <span className={fieldLabel}>{t('form.title')}</span>
         <input
           className={inputClass}
-          placeholder="E.g. Spaghetti carbonara"
+          placeholder={t('form.titlePlaceholder')}
           maxLength={120}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -142,10 +144,10 @@ export default function RecipeForm({
       </label>
 
       <label className={field}>
-        <span className={fieldLabel}>Ingredients</span>
+        <span className={fieldLabel}>{t('form.ingredients')}</span>
         <textarea
           className={inputClass}
-          placeholder="One per line"
+          placeholder={t('form.ingredientsHint')}
           rows={5}
           value={ingredients}
           onChange={(e) => setIngredients(e.target.value)}
@@ -153,10 +155,10 @@ export default function RecipeForm({
       </label>
 
       <label className={field}>
-        <span className={fieldLabel}>Method</span>
+        <span className={fieldLabel}>{t('form.method')}</span>
         <textarea
           className={inputClass}
-          placeholder="One step per line"
+          placeholder={t('form.methodHint')}
           rows={6}
           maxLength={10000}
           value={steps}
@@ -166,17 +168,17 @@ export default function RecipeForm({
 
       <div className={field}>
         <label htmlFor={`${listId}-tags`} className={fieldLabel}>
-          Tags
+          {t('form.tags')}
         </label>
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {tags.map((t) => (
-              <span key={t} className={`${tagPill} min-h-8 pl-3 text-sm`}>
-                #{t}
+            {tags.map((name) => (
+              <span key={name} className={`${tagPill} min-h-8 pl-3 text-sm`}>
+                #{name}
                 <button
                   type="button"
-                  aria-label={`Remove tag ${t}`}
-                  onClick={() => setTags(tags.filter((x) => x !== t))}
+                  aria-label={t('form.removeTag', { tag: name })}
+                  onClick={() => setTags(tags.filter((x) => x !== name))}
                   className="inline-flex size-6 items-center justify-center rounded-full hover:bg-accent/15"
                 >
                   <X className="size-3.5" aria-hidden />
@@ -191,8 +193,8 @@ export default function RecipeForm({
           list={listId}
           placeholder={
             tags.length >= MAX_TAGS
-              ? 'Maximum number of tags reached'
-              : 'Press Enter to add (up to 5)'
+              ? t('form.tagsMaxReached')
+              : t('form.tagsHint')
           }
           maxLength={60}
           disabled={tags.length >= MAX_TAGS}
@@ -230,7 +232,7 @@ export default function RecipeForm({
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel} className={btn}>
-            Cancel
+            {t('form.cancel')}
           </button>
         )}
       </div>
