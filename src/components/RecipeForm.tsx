@@ -36,6 +36,7 @@ export default function RecipeForm({
 }: Props) {
   const { t } = useTranslation()
   const [title, setTitle] = useState(initial?.title ?? '')
+  const [titleError, setTitleError] = useState<string | null>(null)
   const [ingredients, setIngredients] = useState(
     initial?.ingredients.join('\n') ?? '',
   )
@@ -49,6 +50,7 @@ export default function RecipeForm({
   const [tagError, setTagError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const pendingRef = useRef<string | null>(null)
+  const titleRef = useRef<HTMLInputElement>(null)
   const listId = useId()
 
   useEffect(
@@ -96,7 +98,11 @@ export default function RecipeForm({
 
   const handle = async (e: FormEvent) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!title.trim()) {
+      setTitleError(t('form.titleRequired'))
+      titleRef.current?.focus()
+      return
+    }
     const finalTags = addDraft()
     if (!finalTags) return
     const sending = pendingRef.current
@@ -132,16 +138,38 @@ export default function RecipeForm({
 
   return (
     <form onSubmit={(e) => void handle(e)} className="flex flex-col gap-5">
-      <label className={field}>
-        <span className={fieldLabel}>{t('form.title')}</span>
+      <div className={field}>
+        <label htmlFor={`${listId}-title`} className={fieldLabel}>
+          {t('form.title')}{' '}
+          <span aria-hidden className="text-danger">
+            *
+          </span>
+        </label>
         <input
+          id={`${listId}-title`}
+          ref={titleRef}
           className={inputClass}
           placeholder={t('form.titlePlaceholder')}
           maxLength={120}
+          aria-required
+          aria-invalid={titleError !== null}
+          aria-describedby={titleError ? `${listId}-title-error` : undefined}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            setTitle(e.target.value)
+            setTitleError(null)
+          }}
         />
-      </label>
+        {titleError && (
+          <p
+            id={`${listId}-title-error`}
+            role="alert"
+            className="text-sm text-danger"
+          >
+            {titleError}
+          </p>
+        )}
+      </div>
 
       <label className={field}>
         <span className={fieldLabel}>{t('form.ingredients')}</span>

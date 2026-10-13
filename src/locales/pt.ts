@@ -77,6 +77,7 @@ export const pt: typeof en = {
   },
   form: {
     title: 'Título',
+    titleRequired: 'Indica um título para a receita.',
     titlePlaceholder: 'Ex.: Bacalhau à Brás',
     ingredients: 'Ingredientes',
     ingredientsHint: 'Um por linha',

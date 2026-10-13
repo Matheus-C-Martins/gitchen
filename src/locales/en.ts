@@ -74,6 +74,7 @@ export const en = {
   },
   form: {
     title: 'Title',
+    titleRequired: 'Enter a title for the recipe.',
     titlePlaceholder: 'E.g. Spaghetti carbonara',
     ingredients: 'Ingredients',
     ingredientsHint: 'One per line',
