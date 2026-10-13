@@ -9,7 +9,21 @@ App: https://matheus-c-martins.github.io/gitchen/
 - Anyone can read the recipes.
 - To add recipes you need to sign in with GitHub.
 - Each user can only edit and delete their own recipes.
+- Signed-in users can report other people's recipes.
+- Admins review the reports and can delete any recipe.
 - Each recipe shows the name and avatar of the person who created it.
+
+## Moderation
+
+- Any signed-in user can report a recipe from its page, with an optional reason of up to 500 characters. The report button is not shown on your own recipes, and each user can report a given recipe only once.
+- Reports are visible only to admins. Admins see a Moderation panel at the top of the home page, listing each report with the recipe, the reason, who reported it and when.
+- For each report, an admin can dismiss it (which deletes the report) or delete the recipe, which also removes its photo.
+- Admin status is decided in the database by the `is_admin()` function, not in the frontend. The panel is only a convenience: the permissions below are enforced by Row Level Security policies.
+
+| Table | Who can do what |
+|---|---|
+| `reports` | Signed-in users can create reports as themselves. Only admins can read or delete them. |
+| `recipes` | Owners can delete their own recipes. Admins can delete any recipe. |
 
 ## Running locally
 
@@ -37,7 +51,7 @@ Both are public by design and end up in the bundle. Never use a `secret` or `ser
 Protection lives in the database, not in the frontend:
 
 - Row Level Security enabled on `profiles` and `recipes`.
-- Public read access; insert, update and delete only for authenticated users and only on their own rows.
+- Public read access; insert, update and delete only for authenticated users and only on their own rows. The one exception is that admins can also delete any recipe (see Moderation).
 - Field size limits and a quota of 200 recipes per user.
 - Table privileges explicitly granted to the `anon` and `authenticated` roles.
 
