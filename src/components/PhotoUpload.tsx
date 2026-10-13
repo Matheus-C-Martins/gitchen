@@ -24,7 +24,7 @@ export default function PhotoUpload({ userId, value, onChange, disabled }: Props
       try {
         await removeRecipePhoto(pending)
       } catch {
-        // ficheiro órfão: sem impacto para o utilizador
+        // orphaned file: no impact on the user
       }
     }
   }
@@ -41,7 +41,7 @@ export default function PhotoUpload({ userId, value, onChange, disabled }: Props
       uploadedHere.current = path
       onChange(path)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao enviar a fotografia.')
+      setError(err instanceof Error ? err.message : 'Failed to upload the photo.')
     } finally {
       setBusy(false)
     }
@@ -54,10 +54,10 @@ export default function PhotoUpload({ userId, value, onChange, disabled }: Props
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium">Fotografia</span>
+      <span className="text-sm font-medium">Photo</span>
       <RecipePhoto
         path={value}
-        alt="Fotografia da receita"
+        alt="Recipe photo"
         className="aspect-[4/3] w-full rounded-xl"
       />
       <div className="flex flex-wrap items-center gap-2">
@@ -72,7 +72,7 @@ export default function PhotoUpload({ userId, value, onChange, disabled }: Props
           ) : (
             <ImagePlus className="size-4" aria-hidden />
           )}
-          {busy ? 'A enviar…' : value ? 'Trocar fotografia' : 'Adicionar fotografia'}
+          {busy ? 'Uploading…' : value ? 'Replace photo' : 'Add photo'}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -89,7 +89,7 @@ export default function PhotoUpload({ userId, value, onChange, disabled }: Props
             className={btn}
           >
             <Trash2 className="size-4" aria-hidden />
-            Remover foto
+            Remove photo
           </button>
         )}
       </div>

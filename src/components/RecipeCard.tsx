@@ -36,9 +36,9 @@ export default function RecipeCard({
           type="button"
           aria-pressed={favorite}
           aria-label={
-            favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
+            favorite ? 'Remove from favourites' : 'Add to favourites'
           }
-          title={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+          title={favorite ? 'Remove from favourites' : 'Add to favourites'}
           onClick={onToggleFavorite}
           className="absolute right-3 top-3 z-10 inline-flex size-11 items-center justify-center rounded-full bg-card/90 text-accent shadow backdrop-blur transition hover:scale-105 active:scale-95 sm:size-10"
         >
@@ -84,11 +84,11 @@ export default function RecipeCard({
                 className="size-5 shrink-0 rounded-full"
               />
             )}
-            <span className="truncate">{r.profiles?.username ?? 'desconhecido'}</span>
+            <span className="truncate">{r.profiles?.username ?? 'unknown'}</span>
           </span>
           <span
             className="inline-flex shrink-0 items-center gap-1"
-            title={`${count} ingredientes`}
+            title={`${count} ${count === 1 ? 'ingredient' : 'ingredients'}`}
           >
             <ListChecks className="size-4" aria-hidden />
             {count}

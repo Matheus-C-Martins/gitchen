@@ -9,7 +9,7 @@ export default function AuthPanel({ session }: { session: Session | null }) {
       user_name?: string
       avatar_url?: string
     }
-    const name = meta.user_name ?? session.user.email ?? 'utilizador'
+    const name = meta.user_name ?? session.user.email ?? 'user'
     return (
       <div className="flex items-center gap-1.5">
         {meta.avatar_url ? (
@@ -23,15 +23,15 @@ export default function AuthPanel({ session }: { session: Session | null }) {
         )}
         <span
           className="hidden max-w-36 truncate text-sm sm:inline"
-          title={`Sessão iniciada como ${name}`}
+          title={`Signed in as ${name}`}
         >
           {name}
         </span>
         <button
           type="button"
           onClick={() => void supabase.auth.signOut()}
-          aria-label="Terminar sessão"
-          title="Terminar sessão"
+          aria-label="Sign out"
+          title="Sign out"
           className={iconBtn}
         >
           <LogOut className="size-5" aria-hidden />
@@ -49,7 +49,7 @@ export default function AuthPanel({ session }: { session: Session | null }) {
   return (
     <button type="button" onClick={signInWithGitHub} className={btnPrimary}>
       <LogIn className="size-4" aria-hidden />
-      Entrar<span className="hidden sm:inline"> com GitHub</span>
+      Sign in<span className="hidden sm:inline"> with GitHub</span>
     </button>
   )
 }

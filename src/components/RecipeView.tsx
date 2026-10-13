@@ -31,7 +31,7 @@ export default function RecipeView({
     .split(/\n+/)
     .map((s) => s.trim())
     .filter(Boolean)
-  const date = new Date(r.created_at).toLocaleDateString('pt-PT', {
+  const date = new Date(r.created_at).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -73,7 +73,7 @@ export default function RecipeView({
                   className="size-6 rounded-full"
                 />
               )}
-              por {r.profiles?.username ?? 'desconhecido'}
+              by {r.profiles?.username ?? 'unknown'}
             </span>
             <span aria-hidden>·</span>
             <time dateTime={r.created_at}>{date}</time>
@@ -85,9 +85,9 @@ export default function RecipeView({
         </div>
 
         <div className="grid gap-10 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-12">
-          <section aria-labelledby="ingredientes">
-            <h2 id="ingredientes" className="font-serif text-2xl font-semibold">
-              Ingredientes
+          <section aria-labelledby="ingredients">
+            <h2 id="ingredients" className="font-serif text-2xl font-semibold">
+              Ingredients
             </h2>
             {r.ingredients.length > 0 ? (
               <ul className="mt-3 divide-y divide-line">
@@ -102,13 +102,13 @@ export default function RecipeView({
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-muted">Sem ingredientes indicados.</p>
+              <p className="mt-3 text-sm text-muted">No ingredients listed.</p>
             )}
           </section>
 
-          <section aria-labelledby="preparacao">
-            <h2 id="preparacao" className="font-serif text-2xl font-semibold">
-              Modo de preparação
+          <section aria-labelledby="method">
+            <h2 id="method" className="font-serif text-2xl font-semibold">
+              Method
             </h2>
             {steps.length > 0 ? (
               <ol className="mt-3 flex flex-col gap-4">
@@ -125,7 +125,7 @@ export default function RecipeView({
                 ))}
               </ol>
             ) : (
-              <p className="mt-3 text-sm text-muted">Sem modo de preparação indicado.</p>
+              <p className="mt-3 text-sm text-muted">No method provided.</p>
             )}
           </section>
         </div>
@@ -143,18 +143,18 @@ export default function RecipeView({
                 fill={favorite ? 'currentColor' : 'none'}
                 aria-hidden
               />
-              {favorite ? 'Favorita' : 'Favoritar'}
+              {favorite ? 'Favourited' : 'Favourite'}
             </button>
             {isOwner && (
               <button type="button" onClick={onEdit} className={btn}>
                 <Pencil className="size-4" aria-hidden />
-                Editar
+                Edit
               </button>
             )}
             {(isOwner || isAdmin) && (
               <button type="button" onClick={onDelete} className={btnDanger}>
                 <Trash2 className="size-4" aria-hidden />
-                {isOwner ? 'Apagar' : 'Apagar (admin)'}
+                {isOwner ? 'Delete' : 'Delete (admin)'}
               </button>
             )}
             {!isOwner && <ReportButton recipeId={r.id} />}

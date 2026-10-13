@@ -1,17 +1,31 @@
 # Gitchen
 
-Livro de receitas online, feito com React, TypeScript, Vite, Tailwind CSS e Supabase.
+Online recipe book built with React, TypeScript, Vite, Tailwind CSS and Supabase.
 
 App: https://matheus-c-martins.github.io/gitchen/
 
-## Como funciona
+## How it works
 
-- Qualquer pessoa pode ler as receitas.
-- Para adicionar receitas é preciso iniciar sessão com o GitHub.
-- Cada utilizador só pode editar e apagar as suas próprias receitas.
-- Cada receita mostra o nome e o avatar de quem a criou.
+- Anyone can read the recipes.
+- To add recipes you need to sign in with GitHub.
+- Each user can only edit and delete their own recipes.
+- Signed-in users can report other people's recipes.
+- Admins review the reports and can delete any recipe.
+- Each recipe shows the name and avatar of the person who created it.
 
-## Correr localmente
+## Moderation
+
+- Any signed-in user can report a recipe from its page, with an optional reason of up to 500 characters. The report button is not shown on your own recipes, and each user can report a given recipe only once.
+- Reports are visible only to admins. Admins see a Moderation panel at the top of the home page, listing each report with the recipe, the reason, who reported it and when.
+- For each report, an admin can dismiss it (which deletes the report) or delete the recipe, which also removes its photo.
+- Admin status is decided in the database by the `is_admin()` function, not in the frontend. The panel is only a convenience: the permissions below are enforced by Row Level Security policies.
+
+| Table | Who can do what |
+|---|---|
+| `reports` | Signed-in users can create reports as themselves. Only admins can read or delete them. |
+| `recipes` | Owners can delete their own recipes. Admins can delete any recipe. |
+
+## Running locally
 
 ```bash
 git clone https://github.com/Matheus-C-Martins/gitchen.git
@@ -21,29 +35,29 @@ npm install
 npm run dev
 ```
 
-A app fica em http://localhost:5173/gitchen/. Esse endereço tem de estar na lista de Redirect URLs do Supabase (Authentication → URL Configuration) para o login funcionar.
+The app runs at http://localhost:5173/gitchen/. This address must be in Supabase's Redirect URLs list (Authentication → URL Configuration) for login to work.
 
-## Variáveis de ambiente
+## Environment variables
 
-| Variável | Descrição |
+| Variable | Description |
 |---|---|
-| `VITE_SUPABASE_URL` | URL do projeto Supabase |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Chave publicável (`sb_publishable_...`) |
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key (`sb_publishable_...`) |
 
-Ambas são públicas por desenho e vão no bundle. Nunca uses aqui uma chave `secret` ou `service_role`. O Client Secret da OAuth App do GitHub fica só no painel do Supabase.
+Both are public by design and end up in the bundle. Never use a `secret` or `service_role` key here. The Client Secret of the GitHub OAuth App stays only in the Supabase dashboard.
 
-## Segurança
+## Security
 
-A proteção está na base de dados e não no frontend:
+Protection lives in the database, not in the frontend:
 
-- Row Level Security ativo em `profiles` e `recipes`.
-- Leitura pública; inserir, editar e apagar só para utilizadores autenticados e só nas linhas próprias.
-- Limites de tamanho nos campos e quota de 200 receitas por utilizador.
-- Privilégios de tabela concedidos explicitamente aos papéis `anon` e `authenticated`.
+- Row Level Security enabled on `profiles` and `recipes`.
+- Public read access; insert, update and delete only for authenticated users and only on their own rows. The one exception is that admins can also delete any recipe (see Moderation).
+- Field size limits and a quota of 200 recipes per user.
+- Table privileges explicitly granted to the `anon` and `authenticated` roles.
 
-## Tipos da base de dados
+## Database types
 
-`src/lib/database.types.ts` é gerado a partir do Supabase. Para o atualizar depois de mudar o esquema:
+`src/lib/database.types.ts` is generated from Supabase. To update it after changing the schema:
 
 ```bash
 npx supabase gen types typescript --project-id eorykepcebenwqufoqky > src/lib/database.types.ts
@@ -51,10 +65,10 @@ npx supabase gen types typescript --project-id eorykepcebenwqufoqky > src/lib/da
 
 ## Deploy
 
-Cada push para `main` publica no GitHub Pages através de `.github/workflows/deploy.yml`. As pull requests correm o build em `.github/workflows/ci.yml`.
+Every push to `main` publishes to GitHub Pages through `.github/workflows/deploy.yml`. Pull requests run the build in `.github/workflows/ci.yml`.
 
 ## Scripts
 
-- `npm run dev`: servidor de desenvolvimento
-- `npm run build`: verifica os tipos e gera o build
-- `npm run preview`: serve o build localmente
+- `npm run dev`: development server
+- `npm run build`: type-checks and produces the build
+- `npm run preview`: serves the build locally

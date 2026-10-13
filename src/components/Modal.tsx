@@ -48,8 +48,8 @@ export default function Modal({ open, title, onClose, children }: Props) {
             <button
               type="button"
               onClick={onClose}
-              aria-label="Fechar"
-              title="Fechar"
+              aria-label="Close"
+              title="Close"
               className={iconBtn}
             >
               <X className="size-5" aria-hidden />

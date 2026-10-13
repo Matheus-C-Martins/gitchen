@@ -21,7 +21,7 @@ export default function ReportButton({ recipeId }: { recipeId: string }) {
     if (error) {
       setError(
         error.code === '23505'
-          ? 'Já denunciaste esta receita.'
+          ? 'You have already reported this recipe.'
           : error.message,
       )
     } else {
@@ -34,7 +34,7 @@ export default function ReportButton({ recipeId }: { recipeId: string }) {
     return (
       <span className="inline-flex items-center gap-2 text-sm text-muted">
         <Check className="size-4 text-accent" aria-hidden />
-        Denúncia enviada. Obrigado.
+        Report sent. Thank you.
       </span>
     )
   }
@@ -44,7 +44,7 @@ export default function ReportButton({ recipeId }: { recipeId: string }) {
       <div className="flex items-center gap-2">
         <button type="button" onClick={() => setOpen(true)} className={btn}>
           <Flag className="size-4" aria-hidden />
-          Denunciar
+          Report
         </button>
         {error && <span className="text-sm text-danger">{error}</span>}
       </div>
@@ -61,8 +61,8 @@ export default function ReportButton({ recipeId }: { recipeId: string }) {
         maxLength={500}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        placeholder="Motivo (opcional, até 500 caracteres)"
-        aria-label="Motivo da denúncia"
+        placeholder="Reason (optional, up to 500 characters)"
+        aria-label="Reason for the report"
         className={inputClass}
       />
       <div className="flex flex-wrap gap-2">
@@ -72,10 +72,10 @@ export default function ReportButton({ recipeId }: { recipeId: string }) {
           ) : (
             <Send className="size-4" aria-hidden />
           )}
-          Enviar denúncia
+          Send report
         </button>
         <button type="button" onClick={() => setOpen(false)} className={btn}>
-          Cancelar
+          Cancel
         </button>
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}
