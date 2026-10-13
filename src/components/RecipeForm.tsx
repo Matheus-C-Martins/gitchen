@@ -66,7 +66,7 @@ export default function RecipeForm({
     const name = normalizeTag(tagDraft)
     if (!name) return tags
     if (name.length > MAX_TAG_LENGTH) {
-      setTagError(`A etiqueta pode ter no máximo ${MAX_TAG_LENGTH} carateres.`)
+      setTagError(`A tag can have at most ${MAX_TAG_LENGTH} characters.`)
       return null
     }
     if (tags.includes(name)) {
@@ -75,7 +75,7 @@ export default function RecipeForm({
       return tags
     }
     if (tags.length >= MAX_TAGS) {
-      setTagError(`Máximo de ${MAX_TAGS} etiquetas.`)
+      setTagError(`Maximum of ${MAX_TAGS} tags.`)
       return null
     }
     const next = [...tags, name]
@@ -131,10 +131,10 @@ export default function RecipeForm({
   return (
     <form onSubmit={(e) => void handle(e)} className="flex flex-col gap-5">
       <label className={field}>
-        <span className={fieldLabel}>Título</span>
+        <span className={fieldLabel}>Title</span>
         <input
           className={inputClass}
-          placeholder="Ex.: Bacalhau à Brás"
+          placeholder="E.g. Spaghetti carbonara"
           maxLength={120}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -142,10 +142,10 @@ export default function RecipeForm({
       </label>
 
       <label className={field}>
-        <span className={fieldLabel}>Ingredientes</span>
+        <span className={fieldLabel}>Ingredients</span>
         <textarea
           className={inputClass}
-          placeholder="Um por linha"
+          placeholder="One per line"
           rows={5}
           value={ingredients}
           onChange={(e) => setIngredients(e.target.value)}
@@ -153,10 +153,10 @@ export default function RecipeForm({
       </label>
 
       <label className={field}>
-        <span className={fieldLabel}>Modo de preparação</span>
+        <span className={fieldLabel}>Method</span>
         <textarea
           className={inputClass}
-          placeholder="Um passo por linha"
+          placeholder="One step per line"
           rows={6}
           maxLength={10000}
           value={steps}
@@ -166,7 +166,7 @@ export default function RecipeForm({
 
       <div className={field}>
         <label htmlFor={`${listId}-tags`} className={fieldLabel}>
-          Etiquetas
+          Tags
         </label>
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -175,7 +175,7 @@ export default function RecipeForm({
                 #{t}
                 <button
                   type="button"
-                  aria-label={`Remover etiqueta ${t}`}
+                  aria-label={`Remove tag ${t}`}
                   onClick={() => setTags(tags.filter((x) => x !== t))}
                   className="inline-flex size-6 items-center justify-center rounded-full hover:bg-accent/15"
                 >
@@ -191,8 +191,8 @@ export default function RecipeForm({
           list={listId}
           placeholder={
             tags.length >= MAX_TAGS
-              ? 'Máximo de etiquetas atingido'
-              : 'Enter para adicionar (até 5)'
+              ? 'Maximum number of tags reached'
+              : 'Press Enter to add (up to 5)'
           }
           maxLength={60}
           disabled={tags.length >= MAX_TAGS}
@@ -230,7 +230,7 @@ export default function RecipeForm({
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel} className={btn}>
-            Cancelar
+            Cancel
           </button>
         )}
       </div>

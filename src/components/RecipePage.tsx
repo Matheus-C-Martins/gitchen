@@ -74,7 +74,7 @@ export default function RecipePage({
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      setError('Não foi possível copiar a ligação.')
+      setError('Could not copy the link.')
     }
   }
 
@@ -110,7 +110,7 @@ export default function RecipePage({
       <div className="flex items-center justify-between gap-3">
         <a href="#/" className={btn}>
           <ArrowLeft className="size-4" aria-hidden />
-          Todas as receitas
+          All recipes
         </a>
         {recipe && (
           <button type="button" onClick={() => void copyLink()} className={btn}>
@@ -119,7 +119,7 @@ export default function RecipePage({
             ) : (
               <Link2 className="size-4" aria-hidden />
             )}
-            {copied ? 'Ligação copiada' : 'Copiar ligação'}
+            {copied ? 'Link copied' : 'Copy link'}
           </button>
         )}
       </div>
@@ -139,7 +139,7 @@ export default function RecipePage({
 
       {!loading && !error && !recipe && (
         <p className="py-12 text-center text-muted">
-          Receita não encontrada. Pode ter sido apagada.
+          Recipe not found. It may have been deleted.
         </p>
       )}
 
@@ -158,7 +158,7 @@ export default function RecipePage({
 
       <Modal
         open={editing && recipe !== null}
-        title="Editar receita"
+        title="Edit recipe"
         onClose={() => setEditing(false)}
       >
         {recipe && (
@@ -166,7 +166,7 @@ export default function RecipePage({
             userId={userId ?? ''}
             initial={recipe}
             suggestions={suggestions}
-            submitLabel="Guardar"
+            submitLabel="Save"
             onSubmit={(input, tags) => handleUpdate(recipe, input, tags)}
             onCancel={() => setEditing(false)}
           />

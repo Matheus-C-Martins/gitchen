@@ -226,7 +226,7 @@ export default function App() {
       const tagError = await saveRecipeTags(data.id, tags)
       if (tagError) {
         setActionError(
-          `Receita criada, mas não foi possível guardar as etiquetas: ${tagError}`,
+          `Recipe created, but the tags could not be saved: ${tagError}`,
         )
       }
     }
@@ -256,7 +256,7 @@ export default function App() {
       const tagError = await saveRecipeTags(recipe.id, tags)
       if (tagError) {
         setActionError(
-          `Receita guardada, mas não foi possível atualizar as etiquetas: ${tagError}`,
+          `Recipe saved, but the tags could not be updated: ${tagError}`,
         )
       }
     }
@@ -265,7 +265,7 @@ export default function App() {
   }
 
   const removeRecipe = async (recipe: Recipe): Promise<boolean> => {
-    if (!window.confirm('Apagar esta receita?')) return false
+    if (!window.confirm('Delete this recipe?')) return false
     setActionError(null)
     const { error } = await supabase.from('recipes').delete().eq('id', recipe.id)
     if (error) {
@@ -304,10 +304,10 @@ export default function App() {
               onClick={toggleTheme}
               aria-label={
                 theme === 'dark'
-                  ? 'Mudar para tema claro'
-                  : 'Mudar para tema escuro'
+                  ? 'Switch to light theme'
+                  : 'Switch to dark theme'
               }
-              title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+              title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
               className={iconBtn}
             >
               {theme === 'dark' ? (
@@ -359,7 +359,7 @@ export default function App() {
           <>
             <section className="cover mt-6 rounded-3xl px-5 py-10 text-center sm:mt-10 sm:px-10 sm:py-14">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-                O livro de receitas de todos
+                Everyone's recipe book
               </p>
               <h1 className="mt-3 font-serif text-5xl font-semibold tracking-tight sm:text-7xl">
                 Gitchen
@@ -368,8 +368,8 @@ export default function App() {
                 <ChefHat className="size-5" />
               </div>
               <p className="mx-auto mt-4 max-w-md text-balance text-muted">
-                Receitas partilhadas por quem cozinha. Lê, guarda as tuas
-                favoritas e junta as tuas.
+                Recipes shared by people who cook. Read them, save your
+                favourites and add your own.
               </p>
 
               <div className="relative mx-auto mt-7 max-w-lg">
@@ -379,8 +379,8 @@ export default function App() {
                 />
                 <input
                   type="search"
-                  aria-label="Pesquisar receitas"
-                  placeholder="Pesquisar por título ou ingrediente"
+                  aria-label="Search recipes"
+                  placeholder="Search by title or ingredient"
                   value={query}
                   onChange={(e) => changeQuery(e.target.value)}
                   className={searchClass}
@@ -388,8 +388,8 @@ export default function App() {
                 {query && (
                   <button
                     type="button"
-                    aria-label="Limpar pesquisa"
-                    title="Limpar pesquisa"
+                    aria-label="Clear search"
+                    title="Clear search"
                     onClick={() => changeQuery('')}
                     className="absolute right-1.5 top-1/2 inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full text-muted transition hover:bg-accent-soft hover:text-ink"
                   >
@@ -406,26 +406,25 @@ export default function App() {
                     className={btnPrimary}
                   >
                     <Plus className="size-4" aria-hidden />
-                    Nova receita
+                    New recipe
                   </button>
                 ) : (
                   <p className="text-sm text-muted">
-                    Inicia sessão com o GitHub para adicionar e gerir as tuas
-                    receitas.
+                    Sign in with GitHub to add and manage your recipes.
                   </p>
                 )}
               </div>
             </section>
 
             {(session || chips.length > 0) && (
-              <section aria-label="Índice" className="mt-8">
+              <section aria-label="Index" className="mt-8">
                 <h2 className="mb-3 flex items-center gap-2 font-serif text-xl font-semibold">
                   <BookOpen className="size-5 text-accent" aria-hidden />
-                  Índice
+                  Index
                 </h2>
                 <div
                   role="group"
-                  aria-label="Filtros"
+                  aria-label="Filters"
                   className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
                 >
                   {session && (
@@ -440,7 +439,7 @@ export default function App() {
                         fill={onlyFavorites ? 'currentColor' : 'none'}
                         aria-hidden
                       />
-                      Favoritas
+                      Favourites
                     </button>
                   )}
                   {chips.length > 0 && (
@@ -449,7 +448,7 @@ export default function App() {
                       onClick={() => selectTag(null)}
                       className={`${chipBase} ${tag === null ? chipOn : chipOff}`}
                     >
-                      Todas
+                      All
                     </button>
                   )}
                   {chips.map((t) => (
@@ -467,10 +466,10 @@ export default function App() {
             )}
 
             <div className="mb-5 mt-8 flex items-baseline justify-between gap-3">
-              <h2 className="font-serif text-2xl font-semibold">Receitas</h2>
+              <h2 className="font-serif text-2xl font-semibold">Recipes</h2>
               {!loading && (
                 <p className="text-sm text-muted">
-                  {total === 1 ? '1 receita' : `${total} receitas`}
+                  {total === 1 ? '1 recipe' : `${total} recipes`}
                 </p>
               )}
             </div>
@@ -494,8 +493,8 @@ export default function App() {
                 <ChefHat className="size-12 text-accent/50" aria-hidden />
                 <p>
                   {onlyFavorites && !tag && !debouncedQuery
-                    ? 'Ainda não tens receitas favoritas.'
-                    : 'Sem receitas para mostrar.'}
+                    ? 'You have no favourite recipes yet.'
+                    : 'No recipes to show.'}
                 </p>
               </div>
             )}
@@ -525,15 +524,15 @@ export default function App() {
       </main>
 
       <footer className="border-t border-line py-8 text-center text-sm text-muted">
-        Gitchen · O livro de receitas de todos
+        Gitchen · Everyone's recipe book
       </footer>
 
       {session && !routeId && (
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          aria-label="Nova receita"
-          title="Nova receita"
+          aria-label="New recipe"
+          title="New recipe"
           className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 inline-flex size-14 items-center justify-center rounded-full bg-accent text-accent-ink shadow-xl transition active:scale-95 sm:hidden"
         >
           <Plus className="size-6" aria-hidden />
@@ -542,13 +541,13 @@ export default function App() {
 
       <Modal
         open={createOpen && session !== null}
-        title="Nova receita"
+        title="New recipe"
         onClose={() => setCreateOpen(false)}
       >
         <RecipeForm
           userId={userId ?? ''}
           suggestions={suggestions}
-          submitLabel="Adicionar receita"
+          submitLabel="Add recipe"
           onSubmit={async (input, tags) => {
             const ok = await createRecipe(input, tags)
             if (ok) setCreateOpen(false)

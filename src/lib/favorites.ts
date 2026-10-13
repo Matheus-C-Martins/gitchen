@@ -19,7 +19,7 @@ export async function setFavorite(
       .from('favorites')
       .insert({ recipe_id: recipeId })
     if (!error || error.code === '23505') return null
-    if (error.code === '42501') return 'Atingiste o limite de 500 favoritos.'
+    if (error.code === '42501') return 'You have reached the limit of 500 favourites.'
     return error.message
   }
   const { error } = await supabase

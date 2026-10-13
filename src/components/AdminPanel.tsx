@@ -55,7 +55,7 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
   }
 
   const deleteRecipe = async (recipeId: string, photoPath: string | null) => {
-    if (!window.confirm('Apagar esta receita e as respetivas denúncias?')) return
+    if (!window.confirm('Delete this recipe and its reports?')) return
     const { error } = await supabase.from('recipes').delete().eq('id', recipeId)
     if (error) {
       setError(error.message)
@@ -68,12 +68,12 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
 
   return (
     <section
-      aria-label="Moderação"
+      aria-label="Moderation"
       className="rounded-2xl border border-accent/40 bg-card p-5 shadow-sm"
     >
       <h2 className="mb-3 flex items-center gap-2 font-serif text-xl font-semibold">
         <ShieldCheck className="size-5 text-accent" aria-hidden />
-        Moderação ({reports.length})
+        Moderation ({reports.length})
       </h2>
 
       {error && (
@@ -82,10 +82,10 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
         </p>
       )}
 
-      {loading && <p className="text-sm text-muted">A carregar…</p>}
+      {loading && <p className="text-sm text-muted">Loading…</p>}
 
       {!loading && reports.length === 0 && (
-        <p className="text-sm text-muted">Sem denúncias pendentes.</p>
+        <p className="text-sm text-muted">No pending reports.</p>
       )}
 
       <ul className="flex flex-col gap-4">
@@ -103,13 +103,13 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
                   {r.recipes.title}
                 </a>
               ) : (
-                'Receita removida'
+                'Recipe removed'
               )}
             </p>
-            <p className="text-sm">{r.reason || '(sem motivo)'}</p>
+            <p className="text-sm">{r.reason || '(no reason given)'}</p>
             <p className="text-xs text-muted">
-              Denunciada por {r.reporter?.username ?? 'desconhecido'} em{' '}
-              {new Date(r.created_at).toLocaleDateString('pt-PT')}
+              Reported by {r.reporter?.username ?? 'unknown'} on{' '}
+              {new Date(r.created_at).toLocaleDateString('en-GB')}
             </p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -118,7 +118,7 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
                 className={btn}
               >
                 <Check className="size-4" aria-hidden />
-                Ignorar denúncia
+                Dismiss report
               </button>
               {r.recipes && (
                 <button
@@ -129,7 +129,7 @@ export default function AdminPanel({ version, onRecipeDeleted }: Props) {
                   className={btnDanger}
                 >
                   <Trash2 className="size-4" aria-hidden />
-                  Apagar receita
+                  Delete recipe
                 </button>
               )}
             </div>
